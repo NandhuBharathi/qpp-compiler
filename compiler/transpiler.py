@@ -29,6 +29,11 @@ PRINT_PATTERN = re.compile(
     r"^print\s*\((.*)\)\s*$"
 )
 
+FOR_PATTERN = re.compile(
+    r"^for\s+([A-Za-z_][A-Za-z0-9_]*)"
+    r"\s+in\s+range\s*\((.*)\)\s*:\s*$"
+)
+
 RESERVED_NAMES = {
     "func",
     "class",
@@ -123,6 +128,56 @@ def expression_to_cpp(expression: Expr) -> str:
     raise QppSemanticError(
         "Unsupported expression."
     )
+
+
+def split_range_arguments(source: str) -> list[str]:
+    """Split range arguments without breaking parentheses."""
+    arguments = []
+    current = []
+    depth = 0
+
+    for character in source:
+        if character == "(":
+            depth += 1
+            current.append(character)
+            continue
+
+        if character == ")":
+            depth -= 1
+
+            if depth < 0:
+                raise QppSyntaxError(
+                    "Invalid range() parentheses."
+                )
+
+            current.append(character)
+            continue
+
+        if character == "," and depth == 0:
+            argument = "".join(current).strip()
+
+            if not argument:
+                raise QppSyntaxError(
+                    "range() contains an empty argument."
+                )
+
+            arguments.append(argument)
+            current = []
+            continue
+
+        current.append(character)
+
+    if depth != 0:
+        raise QppSyntaxError(
+            "Invalid range() parentheses."
+        )
+
+    final_argument = "".join(current).strip()
+
+    if final_argument:
+        arguments.append(final_argument)
+
+    return arguments
 
 
 def cpp_type_for(qpp_type: str) -> str:
@@ -235,6 +290,81 @@ def transpile(source: str) -> TranspileResult:
 
         executable_statement_found = True
 
+        for_match = FOR_PATTERN.fullmatch(line)
+
+        if for_match:
+            variable_name = for_match.group(1)
+
+            if variable_name in RESERVED_NAMES:
+                raise QppSemanticError(
+                    f"Line {number}: '{variable_name}' "
+                    "is a reserved name."
+                )
+
+            argument_sources = split_range_arguments(
+                for_match.group(2)
+            )
+
+            if len(argument_sources) not in {1, 2, 3}:
+                raise QppSyntaxError(
+                    f"Line {number}: range() expects "
+                    "1, 2, or 3 arguments."
+                )
+
+            arguments = [
+                parse_expression(argument)
+                for argument in argument_sources
+            ]
+
+            for argument in arguments:
+                if infer_type(argument, symbols) != "int":
+                    raise QppSemanticError(
+                        f"Line {number}: range() "
+                        "arguments must be int."
+                    )
+
+            if len(arguments) == 1:
+                start_cpp = "0"
+                stop_cpp = expression_to_cpp(arguments[0])
+                step_cpp = "1"
+
+            elif len(arguments) == 2:
+                start_cpp = expression_to_cpp(arguments[0])
+                stop_cpp = expression_to_cpp(arguments[1])
+                step_cpp = "1"
+
+            else:
+                start_cpp = expression_to_cpp(arguments[0])
+                stop_cpp = expression_to_cpp(arguments[1])
+                step_cpp = expression_to_cpp(arguments[2])
+
+                if isinstance(arguments[2], IntegerExpr):
+                    if arguments[2].value == 0:
+                        raise QppSemanticError(
+                            f"Line {number}: "
+                            "range() step cannot be zero."
+                        )
+
+            symbols[variable_name] = "int"
+
+            emit(
+                "for (long long "
+                f"{variable_name} = {start_cpp}, "
+                f"__qpp_step_{variable_name} = {step_cpp}, "
+                f"__qpp_stop_{variable_name} = {stop_cpp}; "
+                f"__qpp_step_{variable_name} != 0 && "
+                f"(__qpp_step_{variable_name} > 0 "
+                f"? {variable_name} < "
+                f"__qpp_stop_{variable_name} "
+                f": {variable_name} > "
+                f"__qpp_stop_{variable_name}); "
+                f"{variable_name} += "
+                f"__qpp_step_{variable_name}) {{"
+            )
+
+            blocks.append("for")
+            continue
+
         if line.startswith("while ") and line.endswith(":"):
             condition = parse_boolean_condition(
                 line[6:-1],
@@ -305,7 +435,7 @@ def transpile(source: str) -> TranspileResult:
 
             block = blocks.pop()
 
-            if block in {"if", "while"}:
+            if block in {"if", "while", "for"}:
                 emit("}")
                 continue
 
