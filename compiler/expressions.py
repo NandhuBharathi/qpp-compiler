@@ -1,4 +1,4 @@
-"""Q++ expression tokenizer, parser, and type inference."""
+"""Q++ expression parser."""
 
 from dataclasses import dataclass
 from enum import Enum, auto
@@ -12,19 +12,28 @@ class TokenKind(Enum):
     INTEGER = auto()
     STRING = auto()
     IDENTIFIER = auto()
+
+    TRUE = auto()
+    FALSE = auto()
+    AND = auto()
+    OR = auto()
+    NOT = auto()
+
     PLUS = auto()
     MINUS = auto()
     STAR = auto()
     SLASH = auto()
     PERCENT = auto()
-    LPAREN = auto()
-    RPAREN = auto()
+
     EQ = auto()
     NE = auto()
     LT = auto()
     LE = auto()
     GT = auto()
     GE = auto()
+
+    LPAREN = auto()
+    RPAREN = auto()
     EOF = auto()
 
 
@@ -56,6 +65,13 @@ class StringExpr(Expr):
 
 
 @dataclass(frozen=True)
+class BooleanExpr(Expr):
+    """Boolean literal."""
+
+    value: bool
+
+
+@dataclass(frozen=True)
 class VariableExpr(Expr):
     """Variable reference."""
 
@@ -64,7 +80,7 @@ class VariableExpr(Expr):
 
 @dataclass(frozen=True)
 class UnaryExpr(Expr):
-    """Unary arithmetic expression."""
+    """Unary expression."""
 
     operator: str
     operand: Expr
@@ -72,7 +88,7 @@ class UnaryExpr(Expr):
 
 @dataclass(frozen=True)
 class BinaryExpr(Expr):
-    """Binary arithmetic expression."""
+    """Binary expression."""
 
     left: Expr
     operator: str
@@ -81,13 +97,64 @@ class BinaryExpr(Expr):
 
 def tokenize(expression: str) -> list[Token]:
     """Tokenize a Q++ expression."""
-    tokens: list[Token] = []
+    tokens = []
     index = 0
+
+    keywords = {
+        "True": TokenKind.TRUE,
+        "False": TokenKind.FALSE,
+        "and": TokenKind.AND,
+        "or": TokenKind.OR,
+        "not": TokenKind.NOT,
+    }
+
+    two_char_tokens = {
+        "==": TokenKind.EQ,
+        "!=": TokenKind.NE,
+        "<=": TokenKind.LE,
+        ">=": TokenKind.GE,
+    }
+
+    one_char_tokens = {
+        "+": TokenKind.PLUS,
+        "-": TokenKind.MINUS,
+        "*": TokenKind.STAR,
+        "/": TokenKind.SLASH,
+        "%": TokenKind.PERCENT,
+        "<": TokenKind.LT,
+        ">": TokenKind.GT,
+        "(": TokenKind.LPAREN,
+        ")": TokenKind.RPAREN,
+    }
 
     while index < len(expression):
         char = expression[index]
 
         if char.isspace():
+            index += 1
+            continue
+
+        two_char = expression[index:index + 2]
+
+        if two_char in two_char_tokens:
+            tokens.append(
+                Token(
+                    two_char_tokens[two_char],
+                    two_char,
+                    index,
+                )
+            )
+            index += 2
+            continue
+
+        if char in one_char_tokens:
+            tokens.append(
+                Token(
+                    one_char_tokens[char],
+                    char,
+                    index,
+                )
+            )
             index += 1
             continue
 
@@ -100,10 +167,12 @@ def tokenize(expression: str) -> list[Token]:
             ):
                 index += 1
 
+            value = expression[start:index]
+
             tokens.append(
                 Token(
                     TokenKind.INTEGER,
-                    expression[start:index],
+                    value,
                     start,
                 )
             )
@@ -121,10 +190,15 @@ def tokenize(expression: str) -> list[Token]:
             ):
                 index += 1
 
+            value = expression[start:index]
+
             tokens.append(
                 Token(
-                    TokenKind.IDENTIFIER,
-                    expression[start:index],
+                    keywords.get(
+                        value,
+                        TokenKind.IDENTIFIER,
+                    ),
+                    value,
                     start,
                 )
             )
@@ -133,7 +207,7 @@ def tokenize(expression: str) -> list[Token]:
         if char == '"':
             start = index
             index += 1
-            value: list[str] = []
+            value = []
 
             while index < len(expression):
                 current = expression[index]
@@ -160,8 +234,7 @@ def tokenize(expression: str) -> list[Token]:
 
                     if escaped not in escape_map:
                         raise QppSyntaxError(
-                            "Unsupported string escape "
-                            f"'\\\\{escaped}'."
+                            f"Unsupported escape '\\{escaped}'."
                         )
 
                     value.append(escape_map[escaped])
@@ -172,7 +245,7 @@ def tokenize(expression: str) -> list[Token]:
                 index += 1
             else:
                 raise QppSyntaxError(
-                    f"Unterminated string at position {start}."
+                    f"Unterminated string at {start}."
                 )
 
             tokens.append(
@@ -184,74 +257,23 @@ def tokenize(expression: str) -> list[Token]:
             )
             continue
 
-        two_char = expression[index:index + 2]
-        two_char_tokens = {
-            "==": TokenKind.EQ,
-            "!=": TokenKind.NE,
-            "<=": TokenKind.LE,
-            ">=": TokenKind.GE,
-        }
-
-        if two_char in two_char_tokens:
-            tokens.append(
-                Token(
-                    two_char_tokens[two_char],
-                    two_char,
-                    index,
-                )
-            )
-            index += 2
-            continue
-
-        comparison_tokens = {
-            "<": TokenKind.LT,
-            ">": TokenKind.GT,
-        }
-
-        if char in comparison_tokens:
-            tokens.append(
-                Token(
-                    comparison_tokens[char],
-                    char,
-                    index,
-                )
-            )
-            index += 1
-            continue
-
-        single_tokens = {
-            "+": TokenKind.PLUS,
-            "-": TokenKind.MINUS,
-            "*": TokenKind.STAR,
-            "/": TokenKind.SLASH,
-            "%": TokenKind.PERCENT,
-            "(": TokenKind.LPAREN,
-            ")": TokenKind.RPAREN,
-        }
-
-        kind = single_tokens.get(char)
-
-        if kind is not None:
-            tokens.append(
-                Token(kind, char, index)
-            )
-            index += 1
-            continue
-
         raise QppSyntaxError(
-            f"Unexpected character '{char}' "
-            f"at position {index}."
+            f"Unexpected character '{char}' at {index}."
         )
 
     tokens.append(
-        Token(TokenKind.EOF, "", len(expression))
+        Token(
+            TokenKind.EOF,
+            "",
+            len(expression),
+        )
     )
 
     return tokens
 
 
 class ExpressionParser:
-    """Parse Q++ expressions with operator precedence."""
+    """Q++ expression parser."""
 
     def __init__(self, tokens: list[Token]) -> None:
         self.tokens = tokens
@@ -259,11 +281,11 @@ class ExpressionParser:
 
     @property
     def current(self) -> Token:
-        """Return the current token."""
+        """Return current token."""
         return self.tokens[self.index]
 
     def advance(self) -> Token:
-        """Consume and return the current token."""
+        """Consume current token."""
         token = self.current
 
         if token.kind is not TokenKind.EOF:
@@ -272,22 +294,54 @@ class ExpressionParser:
         return token
 
     def parse(self) -> Expr:
-        """Parse a complete expression."""
-        expression = self.parse_comparison()
+        """Parse complete expression."""
+        expression = self.parse_or()
 
         if self.current.kind is not TokenKind.EOF:
             raise QppSyntaxError(
-                "Unexpected token "
-                f"'{self.current.value}'."
+                f"Unexpected token '{self.current.value}'."
             )
 
         return expression
 
+    def parse_or(self) -> Expr:
+        """Parse OR."""
+        left = self.parse_and()
+
+        while self.current.kind is TokenKind.OR:
+            self.advance()
+            right = self.parse_and()
+            left = BinaryExpr(left, "or", right)
+
+        return left
+
+    def parse_and(self) -> Expr:
+        """Parse AND."""
+        left = self.parse_not()
+
+        while self.current.kind is TokenKind.AND:
+            self.advance()
+            right = self.parse_not()
+            left = BinaryExpr(left, "and", right)
+
+        return left
+
+    def parse_not(self) -> Expr:
+        """Parse NOT."""
+        if self.current.kind is TokenKind.NOT:
+            self.advance()
+            return UnaryExpr(
+                "not",
+                self.parse_not(),
+            )
+
+        return self.parse_comparison()
+
     def parse_comparison(self) -> Expr:
-        """Parse comparison expressions."""
+        """Parse comparison."""
         left = self.parse_additive()
 
-        comparison_kinds = {
+        kinds = {
             TokenKind.EQ,
             TokenKind.NE,
             TokenKind.LT,
@@ -296,16 +350,20 @@ class ExpressionParser:
             TokenKind.GE,
         }
 
-        if self.current.kind in comparison_kinds:
+        if self.current.kind in kinds:
             operator = self.advance().value
             right = self.parse_additive()
 
-            return BinaryExpr(left, operator, right)
+            return BinaryExpr(
+                left,
+                operator,
+                right,
+            )
 
         return left
 
     def parse_additive(self) -> Expr:
-        """Parse addition and subtraction."""
+        """Parse + and -."""
         left = self.parse_multiplicative()
 
         while self.current.kind in {
@@ -314,6 +372,7 @@ class ExpressionParser:
         }:
             operator = self.advance().value
             right = self.parse_multiplicative()
+
             left = BinaryExpr(
                 left,
                 operator,
@@ -323,7 +382,7 @@ class ExpressionParser:
         return left
 
     def parse_multiplicative(self) -> Expr:
-        """Parse multiplication, division, and modulo."""
+        """Parse *, / and %."""
         left = self.parse_unary()
 
         while self.current.kind in {
@@ -333,6 +392,7 @@ class ExpressionParser:
         }:
             operator = self.advance().value
             right = self.parse_unary()
+
             left = BinaryExpr(
                 left,
                 operator,
@@ -342,12 +402,13 @@ class ExpressionParser:
         return left
 
     def parse_unary(self) -> Expr:
-        """Parse unary plus and minus."""
+        """Parse numeric unary operators."""
         if self.current.kind in {
             TokenKind.PLUS,
             TokenKind.MINUS,
         }:
             operator = self.advance().value
+
             return UnaryExpr(
                 operator,
                 self.parse_unary(),
@@ -356,8 +417,16 @@ class ExpressionParser:
         return self.parse_primary()
 
     def parse_primary(self) -> Expr:
-        """Parse literals, variables, and parentheses."""
+        """Parse primary expressions."""
         token = self.current
+
+        if token.kind is TokenKind.TRUE:
+            self.advance()
+            return BooleanExpr(True)
+
+        if token.kind is TokenKind.FALSE:
+            self.advance()
+            return BooleanExpr(False)
 
         if token.kind is TokenKind.INTEGER:
             self.advance()
@@ -373,38 +442,33 @@ class ExpressionParser:
 
         if token.kind is TokenKind.LPAREN:
             self.advance()
-            expression = self.parse_additive()
+            expression = self.parse_or()
 
             if self.current.kind is not TokenKind.RPAREN:
-                raise QppSyntaxError(
-                    "Expected ')'."
-                )
+                raise QppSyntaxError("Expected ')'.")
 
             self.advance()
             return expression
 
-        raise QppSyntaxError(
-            "Expected an expression."
-        )
+        raise QppSyntaxError("Expected expression.")
 
 
 def parse_expression(source: str) -> Expr:
     """Parse Q++ expression source."""
     if not source.strip():
-        raise QppSyntaxError(
-            "Expected an expression."
-        )
+        raise QppSyntaxError("Expected expression.")
 
-    return ExpressionParser(
-        tokenize(source)
-    ).parse()
+    return ExpressionParser(tokenize(source)).parse()
 
 
 def infer_type(
     expression: Expr,
     symbols: dict[str, str],
 ) -> str:
-    """Infer and validate an expression type."""
+    """Infer expression type."""
+    if isinstance(expression, BooleanExpr):
+        return "bool"
+
     if isinstance(expression, IntegerExpr):
         return "int"
 
@@ -425,28 +489,42 @@ def infer_type(
             symbols,
         )
 
+        if expression.operator == "not":
+            if operand_type != "bool":
+                raise QppSemanticError(
+                    "'not' requires bool."
+                )
+
+            return "bool"
+
         if operand_type != "int":
             raise QppSemanticError(
-                f"Unary '{expression.operator}' "
-                "requires int."
+                f"Unary '{expression.operator}' requires int."
             )
 
         return "int"
 
     if isinstance(expression, BinaryExpr):
-        left_type = infer_type(
-            expression.left,
-            symbols,
-        )
-        right_type = infer_type(
-            expression.right,
-            symbols,
-        )
+        left = infer_type(expression.left, symbols)
+        right = infer_type(expression.right, symbols)
+
+        if expression.operator in {"and", "or"}:
+            if left != "bool" or right != "bool":
+                raise QppSemanticError(
+                    f"'{expression.operator}' requires bool."
+                )
+
+            return "bool"
 
         if expression.operator in {
-            "==", "!=", "<", "<=", ">", ">="
+            "==",
+            "!=",
+            "<",
+            "<=",
+            ">",
+            ">=",
         }:
-            if left_type != right_type:
+            if left != right:
                 raise QppSemanticError(
                     "Comparison requires matching types."
                 )
@@ -454,15 +532,14 @@ def infer_type(
             return "bool"
 
         if expression.operator == "+":
-            if left_type == right_type == "int":
+            if left == right == "int":
                 return "int"
 
-            if left_type == right_type == "str":
+            if left == right == "str":
                 return "str"
 
             raise QppSemanticError(
-                "Operator '+' requires two ints "
-                "or two strings."
+                "'+' requires two ints or two strings."
             )
 
         if expression.operator in {
@@ -471,10 +548,9 @@ def infer_type(
             "/",
             "%",
         }:
-            if left_type != "int" or right_type != "int":
+            if left != "int" or right != "int":
                 raise QppSemanticError(
-                    f"Operator '{expression.operator}' "
-                    "requires int operands."
+                    f"'{expression.operator}' requires int."
                 )
 
             return "int"

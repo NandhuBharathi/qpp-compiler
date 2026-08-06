@@ -5,6 +5,7 @@ import re
 from .errors import QppSemanticError, QppSyntaxError
 from .expressions import (
     BinaryExpr,
+    BooleanExpr,
     Expr,
     IntegerExpr,
     StringExpr,
@@ -59,6 +60,9 @@ def escape_cpp_string(value: str) -> str:
 
 def expression_to_cpp(expression: Expr) -> str:
     """Generate C++ for an expression."""
+    if isinstance(expression, BooleanExpr):
+        return "true" if expression.value else "false"
+
     if isinstance(expression, IntegerExpr):
         return str(expression.value)
 
@@ -76,15 +80,28 @@ def expression_to_cpp(expression: Expr) -> str:
         operand = expression_to_cpp(
             expression.operand
         )
-        return f"({expression.operator}{operand})"
+
+        operator = (
+            "!"
+            if expression.operator == "not"
+            else expression.operator
+        )
+
+        return f"({operator}{operand})"
 
     if isinstance(expression, BinaryExpr):
         left = expression_to_cpp(expression.left)
         right = expression_to_cpp(expression.right)
 
-        return (
-            f"({left} {expression.operator} {right})"
+        operator = {
+            "and": "&&",
+            "or": "||",
+        }.get(
+            expression.operator,
+            expression.operator,
         )
+
+        return f"({left} {operator} {right})"
 
     raise QppSemanticError(
         "Unsupported expression."
