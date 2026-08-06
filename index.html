@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+    <meta
+        name="description"
+        content="Q++ Native Programming Language Playground"
+    >
+
+    <title>Q++ Playground</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        :root {
+            color-scheme: dark;
+            font-family:
+                Inter,
+                system-ui,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: #0d1117;
+            color: #e6edf3;
+        }
+
+        header {
+            padding: 18px 20px;
+            border-bottom: 1px solid #30363d;
+            background: #161b22;
+        }
+
+        .brand {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 800;
+        }
+
+        .tagline {
+            margin: 5px 0 0;
+            color: #8b949e;
+            font-size: 13px;
+        }
+
+        main {
+            width: min(100%, 1000px);
+            margin: 0 auto;
+            padding: 16px;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 8px;
+            padding: 11px 18px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        #runButton {
+            background: #238636;
+            color: white;
+        }
+
+        #clearButton {
+            background: #30363d;
+            color: #e6edf3;
+        }
+
+        button:disabled {
+            cursor: wait;
+            opacity: 0.65;
+        }
+
+        .panel {
+            overflow: hidden;
+            margin-bottom: 16px;
+            border: 1px solid #30363d;
+            border-radius: 10px;
+            background: #0d1117;
+        }
+
+        .panel-title {
+            padding: 10px 14px;
+            border-bottom: 1px solid #30363d;
+            background: #161b22;
+            color: #8b949e;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        textarea {
+            display: block;
+            width: 100%;
+            min-height: 390px;
+            resize: vertical;
+            border: 0;
+            outline: 0;
+            padding: 16px;
+            background: #0d1117;
+            color: #e6edf3;
+            font-family:
+                "SFMono-Regular",
+                Consolas,
+                "Liberation Mono",
+                monospace;
+            font-size: 15px;
+            line-height: 1.6;
+            tab-size: 4;
+        }
+
+        pre {
+            min-height: 130px;
+            margin: 0;
+            overflow-x: auto;
+            padding: 16px;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            color: #e6edf3;
+            font-family:
+                "SFMono-Regular",
+                Consolas,
+                "Liberation Mono",
+                monospace;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .status {
+            margin-left: auto;
+            align-self: center;
+            color: #8b949e;
+            font-size: 13px;
+        }
+
+        @media (max-width: 600px) {
+            main {
+                padding: 10px;
+            }
+
+            textarea {
+                min-height: 360px;
+                font-size: 14px;
+            }
+
+            header {
+                padding: 14px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1 class="brand">Q++</h1>
+        <p class="tagline">
+            C++ Speed. Python Simplicity.
+        </p>
+    </header>
+
+    <main>
+        <div class="toolbar">
+            <button id="runButton" type="button">
+                ▶ Run
+            </button>
+
+            <button id="clearButton" type="button">
+                Clear
+            </button>
+
+            <span id="status" class="status">
+                Ready
+            </span>
+        </div>
+
+        <section class="panel">
+            <div class="panel-title">
+                main.qpp
+            </div>
+
+            <textarea
+                id="editor"
+                spellcheck="false"
+                autocomplete="off"
+                autocapitalize="off"
+            >func main():
+    language = "Q++"
+    age = 20
+    result = 10 + 20 * 2
+
+    print(language)
+    print(result)
+
+    if age >= 18:
+        print("Adult")
+    else:
+        print("Child")
+    end
+end</textarea>
+        </section>
+
+        <section class="panel">
+            <div class="panel-title">
+                Output
+            </div>
+
+            <pre id="output">Press Run to execute Q++.</pre>
+        </section>
+    </main>
+
+    <script>
+        const API_URL =
+            "https://qpp-compiler.onrender.com/compile";
+
+        const editor = document.getElementById("editor");
+        const output = document.getElementById("output");
+        const runButton = document.getElementById("runButton");
+        const clearButton = document.getElementById("clearButton");
+        const status = document.getElementById("status");
+
+        async function runQpp() {
+            const source = editor.value;
+
+            if (!source.trim()) {
+                output.textContent = "Source code is empty.";
+                return;
+            }
+
+            runButton.disabled = true;
+            status.textContent = "Compiling...";
+            output.textContent = "Compiling Q++...";
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        source: source
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    output.textContent =
+                        data.detail
+                            ? JSON.stringify(data.detail, null, 2)
+                            : `HTTP Error ${response.status}`;
+
+                    status.textContent = "Error";
+                    return;
+                }
+
+                if (data.success) {
+                    output.textContent =
+                        data.output || "Program finished.";
+
+                    status.textContent = "Success";
+                } else {
+                    output.textContent =
+                        data.error || "Compilation failed.";
+
+                    status.textContent = "Compile Error";
+                }
+            } catch (error) {
+                output.textContent =
+                    "Cannot connect to Q++ compiler API.\n\n" +
+                    error.message +
+                    "\n\nIf the Render free instance was sleeping, " +
+                    "wait and press Run again.";
+
+                status.textContent = "Connection Error";
+            } finally {
+                runButton.disabled = false;
+            }
+        }
+
+        runButton.addEventListener("click", runQpp);
+
+        clearButton.addEventListener("click", () => {
+            editor.value = "";
+            output.textContent = "";
+            status.textContent = "Ready";
+            editor.focus();
+        });
+
+        editor.addEventListener("keydown", (event) => {
+            if (event.key !== "Tab") {
+                return;
+            }
+
+            event.preventDefault();
+
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+
+            editor.value =
+                editor.value.substring(0, start) +
+                "    " +
+                editor.value.substring(end);
+
+            editor.selectionStart =
+                editor.selectionEnd =
+                start + 4;
+        });
+    </script>
+</body>
+</html>
