@@ -19,6 +19,12 @@ class TokenKind(Enum):
     PERCENT = auto()
     LPAREN = auto()
     RPAREN = auto()
+    EQ = auto()
+    NE = auto()
+    LT = auto()
+    LE = auto()
+    GT = auto()
+    GE = auto()
     EOF = auto()
 
 
@@ -178,6 +184,41 @@ def tokenize(expression: str) -> list[Token]:
             )
             continue
 
+        two_char = expression[index:index + 2]
+        two_char_tokens = {
+            "==": TokenKind.EQ,
+            "!=": TokenKind.NE,
+            "<=": TokenKind.LE,
+            ">=": TokenKind.GE,
+        }
+
+        if two_char in two_char_tokens:
+            tokens.append(
+                Token(
+                    two_char_tokens[two_char],
+                    two_char,
+                    index,
+                )
+            )
+            index += 2
+            continue
+
+        comparison_tokens = {
+            "<": TokenKind.LT,
+            ">": TokenKind.GT,
+        }
+
+        if char in comparison_tokens:
+            tokens.append(
+                Token(
+                    comparison_tokens[char],
+                    char,
+                    index,
+                )
+            )
+            index += 1
+            continue
+
         single_tokens = {
             "+": TokenKind.PLUS,
             "-": TokenKind.MINUS,
@@ -232,7 +273,7 @@ class ExpressionParser:
 
     def parse(self) -> Expr:
         """Parse a complete expression."""
-        expression = self.parse_additive()
+        expression = self.parse_comparison()
 
         if self.current.kind is not TokenKind.EOF:
             raise QppSyntaxError(
@@ -241,6 +282,27 @@ class ExpressionParser:
             )
 
         return expression
+
+    def parse_comparison(self) -> Expr:
+        """Parse comparison expressions."""
+        left = self.parse_additive()
+
+        comparison_kinds = {
+            TokenKind.EQ,
+            TokenKind.NE,
+            TokenKind.LT,
+            TokenKind.LE,
+            TokenKind.GT,
+            TokenKind.GE,
+        }
+
+        if self.current.kind in comparison_kinds:
+            operator = self.advance().value
+            right = self.parse_additive()
+
+            return BinaryExpr(left, operator, right)
+
+        return left
 
     def parse_additive(self) -> Expr:
         """Parse addition and subtraction."""
@@ -380,6 +442,16 @@ def infer_type(
             expression.right,
             symbols,
         )
+
+        if expression.operator in {
+            "==", "!=", "<", "<=", ">", ">="
+        }:
+            if left_type != right_type:
+                raise QppSemanticError(
+                    "Comparison requires matching types."
+                )
+
+            return "bool"
 
         if expression.operator == "+":
             if left_type == right_type == "int":

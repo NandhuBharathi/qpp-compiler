@@ -92,152 +92,158 @@ def expression_to_cpp(expression: Expr) -> str:
 
 
 def transpile(source: str):
-    """Compile Q++ Milestone 2 into C++."""
+    """Compile Q++ Milestone 3 into C++."""
     if not source.strip():
         raise QppSyntaxError("Source code is empty.")
 
     symbols: dict[str, str] = {}
     body: list[str] = []
+    blocks: list[str] = []
 
-    inside_main = False
     main_found = False
-    main_closed = False
 
-    for line_number, raw_line in enumerate(
-        source.splitlines(),
-        start=1,
-    ):
-        line = raw_line.strip()
+    def emit(code: str) -> None:
+        body.append("    " * len(blocks) + code)
+
+    for number, raw in enumerate(source.splitlines(), 1):
+        line = raw.strip()
 
         if not line or line.startswith("#"):
             continue
 
-        if not inside_main:
-            if main_closed:
-                raise QppSyntaxError(
-                    f"Line {line_number}: "
-                    "code after main() is not supported."
-                )
+        if MAIN_PATTERN.fullmatch(line):
+            if main_found:
+                raise QppSyntaxError("main() already defined.")
 
-            if MAIN_PATTERN.fullmatch(line):
-                if main_found:
-                    raise QppSyntaxError(
-                        "main() is already defined."
-                    )
+            main_found = True
+            blocks.append("func")
+            continue
 
-                main_found = True
-                inside_main = True
-                continue
-
+        if not main_found:
             raise QppSyntaxError(
-                f"Line {line_number}: "
-                "expected 'func main():'."
+                f"Line {number}: expected 'func main():'."
             )
 
+        if line.startswith("if ") and line.endswith(":"):
+            condition = parse_expression(line[3:-1])
+            condition_type = infer_type(condition, symbols)
+
+            if condition_type != "bool":
+                raise QppSemanticError(
+                    f"Line {number}: if requires bool."
+                )
+
+            emit(
+                f"if ({expression_to_cpp(condition)}) {{"
+            )
+            blocks.append("if")
+            continue
+
+        if line.startswith("elif ") and line.endswith(":"):
+            if not blocks or blocks[-1] != "if":
+                raise QppSyntaxError(
+                    f"Line {number}: unexpected elif."
+                )
+
+            condition = parse_expression(line[5:-1])
+
+            if infer_type(condition, symbols) != "bool":
+                raise QppSemanticError(
+                    f"Line {number}: elif requires bool."
+                )
+
+            blocks.pop()
+            emit(
+                "} else if "
+                f"({expression_to_cpp(condition)}) {{"
+            )
+            blocks.append("if")
+            continue
+
+        if line == "else:":
+            if not blocks or blocks[-1] != "if":
+                raise QppSyntaxError(
+                    f"Line {number}: unexpected else."
+                )
+
+            blocks.pop()
+            emit("} else {")
+            blocks.append("if")
+            continue
+
         if line == "end":
-            inside_main = False
-            main_closed = True
+            if not blocks:
+                raise QppSyntaxError(
+                    f"Line {number}: unexpected end."
+                )
+
+            block = blocks.pop()
+
+            if block == "if":
+                emit("}")
+
             continue
 
         print_match = PRINT_PATTERN.fullmatch(line)
 
         if print_match:
-            expression_source = (
+            expression = parse_expression(
                 print_match.group(1).strip()
             )
-
-            expression = parse_expression(
-                expression_source
-            )
-
             infer_type(expression, symbols)
 
-            body.append(
-                "    std::cout << "
+            emit(
+                "std::cout << "
                 f"{expression_to_cpp(expression)} "
                 "<< std::endl;"
             )
             continue
 
-        assignment = ASSIGNMENT_PATTERN.fullmatch(
-            line
-        )
+        assignment = ASSIGNMENT_PATTERN.fullmatch(line)
 
         if assignment:
-            variable_name = assignment.group(1)
-            expression_source = assignment.group(2)
-
-            if variable_name in RESERVED_NAMES:
-                raise QppSemanticError(
-                    f"Line {line_number}: "
-                    f"'{variable_name}' is reserved."
-                )
-
+            name = assignment.group(1)
             expression = parse_expression(
-                expression_source
+                assignment.group(2)
             )
+            value_type = infer_type(expression, symbols)
+            cpp = expression_to_cpp(expression)
 
-            expression_type = infer_type(
-                expression,
-                symbols,
-            )
-
-            cpp_expression = expression_to_cpp(
-                expression
-            )
-
-            if variable_name not in symbols:
-                symbols[variable_name] = expression_type
+            if name not in symbols:
+                symbols[name] = value_type
 
                 cpp_type = {
                     "int": "long long",
                     "str": "std::string",
-                }[expression_type]
+                    "bool": "bool",
+                }[value_type]
 
-                body.append(
-                    f"    {cpp_type} "
-                    f"{variable_name} = "
-                    f"{cpp_expression};"
-                )
-                continue
+                emit(f"{cpp_type} {name} = {cpp};")
+            else:
+                if symbols[name] != value_type:
+                    raise QppSemanticError(
+                        f"Line {number}: type mismatch."
+                    )
 
-            current_type = symbols[variable_name]
+                emit(f"{name} = {cpp};")
 
-            if current_type != expression_type:
-                raise QppSemanticError(
-                    f"Line {line_number}: "
-                    f"cannot assign {expression_type} "
-                    f"to '{variable_name}' "
-                    f"of type {current_type}."
-                )
-
-            body.append(
-                f"    {variable_name} = "
-                f"{cpp_expression};"
-            )
             continue
 
         raise QppSyntaxError(
-            f"Line {line_number}: "
-            f"unsupported statement '{line}'."
+            f"Line {number}: unsupported statement."
         )
 
     if not main_found:
-        raise QppSyntaxError(
-            "Program must define 'func main():'."
-        )
+        raise QppSyntaxError("main() not found.")
 
-    if inside_main:
-        raise QppSyntaxError(
-            "main() block is missing 'end'."
-        )
+    if blocks:
+        raise QppSyntaxError("Missing 'end'.")
 
     cpp_body = "\n".join(body)
 
     cpp_source = (
         "#include <iostream>\n"
-        "#include <string>\n"
-        "\n"
+        "#include <string>\n\n"
         "int main() {\n"
         f"{cpp_body}\n"
         "    return 0;\n"
@@ -245,7 +251,7 @@ def transpile(source: str):
     )
 
     class Result:
-        def __init__(self, cpp_source: str) -> None:
-            self.cpp_source = cpp_source
+        def __init__(self, source: str):
+            self.cpp_source = source
 
     return Result(cpp_source)
