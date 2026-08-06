@@ -11,9 +11,7 @@ MAIN_PATTERN = re.compile(
 )
 
 PRINT_PATTERN = re.compile(
-    r"^print\s*\(\s*"
-    r'"((?:\\.|[^"\\])*)"'
-    r"\s*\)\s*$"
+    r'^print\s*\(\s*"((?:\\.|[^"\\])*)"\s*\)\s*$'
 )
 
 
@@ -24,44 +22,37 @@ class TranspileResult:
     cpp_source: str
 
 
-def escape_cpp_string(value: str) -> str:
-    """Preserve supported Q++ string escapes for C++."""
-    output: list[str] = []
+def validate_string(value: str) -> str:
+    """Validate supported Q++ string escapes."""
     index = 0
 
     while index < len(value):
-        char = value[index]
-
-        if char == "\\":
-            if index + 1 >= len(value):
-                raise QppSyntaxError(
-                    "Invalid trailing backslash in string."
-                )
-
-            escaped = value[index + 1]
-
-            if escaped not in {'"', "\\", "n", "t", "r"}:
-                raise QppSyntaxError(
-                    f"Unsupported string escape: \\\\{escaped}"
-                )
-
-            output.append("\\")
-            output.append(escaped)
-            index += 2
+        if value[index] != "\\":
+            index += 1
             continue
 
-        output.append(char)
-        index += 1
+        if index + 1 >= len(value):
+            raise QppSyntaxError(
+                "Invalid trailing backslash in string."
+            )
 
-    return "".join(output)
+        escaped = value[index + 1]
+
+        if escaped not in {'"', "\\", "n", "t", "r"}:
+            raise QppSyntaxError(
+                f"Unsupported string escape: \\\\{escaped}"
+            )
+
+        index += 2
+
+    return value
 
 
 def transpile(source: str) -> TranspileResult:
-    """Compile Milestone 1 Q++ syntax into C++ source."""
+    """Compile Milestone 1 Q++ into valid C++ source."""
     if not source.strip():
         raise QppSyntaxError("Source code is empty.")
 
-    source_lines = source.splitlines()
     cpp_body: list[str] = []
 
     inside_main = False
@@ -69,15 +60,12 @@ def transpile(source: str) -> TranspileResult:
     found_main = False
 
     for line_number, raw_line in enumerate(
-        source_lines,
+        source.splitlines(),
         start=1,
     ):
         line = raw_line.strip()
 
-        if not line:
-            continue
-
-        if line.startswith("#"):
+        if not line or line.startswith("#"):
             continue
 
         if not inside_main:
@@ -111,7 +99,7 @@ def transpile(source: str) -> TranspileResult:
         print_match = PRINT_PATTERN.fullmatch(line)
 
         if print_match:
-            message = escape_cpp_string(
+            message = validate_string(
                 print_match.group(1)
             )
 
@@ -123,7 +111,7 @@ def transpile(source: str) -> TranspileResult:
 
         raise QppSyntaxError(
             f"Line {line_number}: "
-            "Milestone 1 supports only print(\"...\")."
+            'Milestone 1 supports only print("...").'
         )
 
     if not found_main:
@@ -136,15 +124,17 @@ def transpile(source: str) -> TranspileResult:
             "main() block is missing 'end'."
         )
 
-    body = "\\n".join(cpp_body)
+    body = "\n".join(cpp_body)
 
     cpp_source = (
-        "#include <iostream>\\n"
-        "\\n"
-        "int main() {\\n"
-        f"{body}\\n"
-        "    return 0;\\n"
-        "}\\n"
+        "#include <iostream>\n"
+        "\n"
+        "int main() {\n"
+        f"{body}\n"
+        "    return 0;\n"
+        "}\n"
     )
 
-    return TranspileResult(cpp_source=cpp_source)
+    return TranspileResult(
+        cpp_source=cpp_source,
+    )
