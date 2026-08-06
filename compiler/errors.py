@@ -2,8 +2,12 @@
 
 
 class QppError(Exception):
-    """Base error raised by the Q++ compiler."""
+    """Base Q++ compiler error."""
 
 
 class QppSyntaxError(QppError):
-    """Raised when Q++ source contains invalid syntax."""
+    """Invalid Q++ syntax."""
+
+
+class QppSemanticError(QppError):
+    """Invalid Q++ program semantics."""
