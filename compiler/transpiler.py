@@ -141,6 +141,21 @@ def transpile(source: str):
                 f"Line {number}: expected 'func main():'."
             )
 
+        if line.startswith("while ") and line.endswith(":"):
+            condition = parse_expression(line[6:-1])
+            condition_type = infer_type(condition, symbols)
+
+            if condition_type != "bool":
+                raise QppSemanticError(
+                    f"Line {number}: while requires bool."
+                )
+
+            emit(
+                f"while ({expression_to_cpp(condition)}) {{"
+            )
+            blocks.append("while")
+            continue
+
         if line.startswith("if ") and line.endswith(":"):
             condition = parse_expression(line[3:-1])
             condition_type = infer_type(condition, symbols)
@@ -196,7 +211,7 @@ def transpile(source: str):
 
             block = blocks.pop()
 
-            if block == "if":
+            if block in {"if", "while"}:
                 emit("}")
 
             continue
