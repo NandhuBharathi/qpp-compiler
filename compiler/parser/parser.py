@@ -210,7 +210,7 @@ class Parser:
             body=body,
         )
 
-def parse_assignment(self):
+    def parse_assignment(self):
 
         name = self.match(
             TokenType.IDENTIFIER
