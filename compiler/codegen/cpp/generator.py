@@ -114,6 +114,25 @@ class CppGenerator:
                 "    }"
             )
 
+            if (
+                statement.else_body
+                is not None
+            ):
+                self.lines.append(
+                    "    else {"
+                )
+
+                for child in (
+                    statement.else_body
+                ):
+                    self.generate_statement(
+                        child
+                    )
+
+                self.lines.append(
+                    "    }"
+                )
+
         elif isinstance(
             statement,
             Print,

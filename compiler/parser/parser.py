@@ -116,9 +116,45 @@ class Parser:
             TokenType.RBRACE
         )
 
+        else_body = None
+
+        if (
+            self.current.type
+            == TokenType.ELSE
+        ):
+
+            self.advance()
+
+            self.match(
+                TokenType.LBRACE
+            )
+
+            else_body = []
+
+            while (
+                self.current.type
+                != TokenType.RBRACE
+            ):
+
+                if (
+                    self.current.type
+                    == TokenType.NEWLINE
+                ):
+                    self.advance()
+                    continue
+
+                else_body.append(
+                    self.parse_statement()
+                )
+
+            self.match(
+                TokenType.RBRACE
+            )
+
         return If(
             condition=condition,
             body=body,
+            else_body=else_body,
         )
 
     def parse_assignment(self):
