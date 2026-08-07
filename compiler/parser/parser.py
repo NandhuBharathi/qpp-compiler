@@ -77,7 +77,7 @@ class Parser:
     def parse_assignment(self):
 
         name = self.match(
-            TokenType.PRINT
+            TokenType.IDENTIFIER
         ).value
 
         self.match(
