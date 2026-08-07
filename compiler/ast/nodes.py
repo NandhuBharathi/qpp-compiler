@@ -116,9 +116,3 @@ class BinaryOp:
     left: object
     operator: str
     right: object
-
-
-@dataclass
-class While:
-    condition: object
-    body: list
