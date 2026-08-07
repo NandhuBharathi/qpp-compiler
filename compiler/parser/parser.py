@@ -94,7 +94,7 @@ class Parser:
     def parse_print(self):
 
         self.match(
-            TokenType.IDENTIFIER
+            TokenType.PRINT
         )
 
         self.match(
