@@ -11,6 +11,7 @@ from compiler.ast.nodes import (
     String,
     BinaryOp,
     If,
+    While,
 )
 
 
@@ -132,6 +133,31 @@ class CppGenerator:
                 self.lines.append(
                     "    }"
                 )
+
+        elif isinstance(
+            statement,
+            While,
+        ):
+            condition = (
+                self.generate_expression(
+                    statement.condition
+                )
+            )
+
+            self.lines.append(
+                f"    while ({condition}) {{"
+            )
+
+            for child in (
+                statement.body
+            ):
+                self.generate_statement(
+                    child
+                )
+
+            self.lines.append(
+                "    }"
+            )
 
         elif isinstance(
             statement,
