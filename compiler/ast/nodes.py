@@ -109,3 +109,10 @@ class Import(Statement):
 class Call(Expression):
     name: str
     arguments: list[Expression]
+
+
+@dataclass
+class BinaryOp:
+    left: object
+    operator: str
+    right: object

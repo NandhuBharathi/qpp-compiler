@@ -9,6 +9,7 @@ from compiler.ast.nodes import (
     Program,
     Print,
     String,
+    BinaryOp,
 )
 
 
@@ -138,6 +139,22 @@ class CppGenerator:
                 "true"
                 if expression.value
                 else "false"
+            )
+
+        if isinstance(
+            expression,
+            BinaryOp,
+        ):
+            return (
+                "("
+                + self.generate_expression(
+                    expression.left
+                )
+                + f" {expression.operator} "
+                + self.generate_expression(
+                    expression.right
+                )
+                + ")"
             )
 
         if isinstance(

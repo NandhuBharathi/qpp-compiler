@@ -9,6 +9,7 @@ from compiler.ast.nodes import (
     String,
     Boolean,
     Program,
+    BinaryOp,
 )
 
 from compiler.lexer.tokens import (
@@ -112,7 +113,29 @@ class Parser:
         )
 
 
+
     def parse_expression(self):
+        left = self.parse_primary()
+
+        while self.current.type in (
+            TokenType.PLUS,
+            TokenType.MINUS,
+            TokenType.STAR,
+            TokenType.SLASH,
+        ):
+            operator = self.advance().value
+
+            right = self.parse_primary()
+
+            left = BinaryOp(
+                left=left,
+                operator=operator,
+                right=right,
+            )
+
+        return left
+
+    def parse_primary(self):
 
         token = self.current
 
