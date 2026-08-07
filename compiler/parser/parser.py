@@ -11,6 +11,7 @@ from compiler.ast.nodes import (
     Program,
     BinaryOp,
     If,
+    While,
 )
 
 from compiler.lexer.tokens import (
@@ -67,6 +68,9 @@ class Parser:
 
         if self.current.type == TokenType.IF:
             return self.parse_if()
+
+        if self.current.type == TokenType.WHILE:
+            return self.parse_while()
 
         if (
             self.current.type == TokenType.IDENTIFIER
@@ -163,7 +167,50 @@ class Parser:
             else_body=else_body,
         )
 
-    def parse_assignment(self):
+    
+
+    def parse_while(self):
+
+        self.match(
+            TokenType.WHILE
+        )
+
+        condition = (
+            self.parse_expression()
+        )
+
+        self.match(
+            TokenType.LBRACE
+        )
+
+        body = []
+
+        while (
+            self.current.type
+            != TokenType.RBRACE
+        ):
+
+            if (
+                self.current.type
+                == TokenType.NEWLINE
+            ):
+                self.advance()
+                continue
+
+            body.append(
+                self.parse_statement()
+            )
+
+        self.match(
+            TokenType.RBRACE
+        )
+
+        return While(
+            condition=condition,
+            body=body,
+        )
+
+def parse_assignment(self):
 
         name = self.match(
             TokenType.IDENTIFIER
