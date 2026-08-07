@@ -116,6 +116,12 @@ class Parser:
             TokenType.RBRACE
         )
 
+        while (
+            self.current.type
+            == TokenType.NEWLINE
+        ):
+            self.advance()
+
         else_body = None
 
         if (
