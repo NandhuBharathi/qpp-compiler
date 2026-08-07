@@ -122,6 +122,12 @@ class Parser:
             TokenType.MINUS,
             TokenType.STAR,
             TokenType.SLASH,
+            TokenType.EQ,
+            TokenType.NE,
+            TokenType.LT,
+            TokenType.LE,
+            TokenType.GT,
+            TokenType.GE,
         ):
             operator = self.advance().value
 
