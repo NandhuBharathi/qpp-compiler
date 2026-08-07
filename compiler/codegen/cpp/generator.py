@@ -11,6 +11,9 @@ from compiler.ast.nodes import (
     String,
     BinaryOp,
     If,
+    Function,
+    Return,
+    Call,
     While,
 )
 
@@ -30,13 +33,34 @@ class CppGenerator:
             "#include <iostream>",
             "#include <string>",
             "",
-            "int main() {",
         ]
 
         for statement in program.statements:
-            self.generate_statement(
-                statement
-            )
+
+            if isinstance(
+                statement,
+                Function,
+            ):
+                self.generate_statement(
+                    statement
+                )
+
+        self.lines.extend(
+            [
+                "",
+                "int main() {",
+            ]
+        )
+
+        for statement in program.statements:
+
+            if not isinstance(
+                statement,
+                Function,
+            ):
+                self.generate_statement(
+                    statement
+                )
 
         self.lines.extend(
             [
@@ -93,6 +117,9 @@ class CppGenerator:
         elif isinstance(
             statement,
             If,
+
+
+
         ):
             condition = (
                 self.generate_expression(
@@ -189,6 +216,57 @@ class CppGenerator:
 
         elif isinstance(
             statement,
+            Function,
+        ):
+
+            parameters = []
+
+            for name in (
+                statement.parameters
+            ):
+                parameters.append(
+                    f"auto {name}"
+                )
+
+            self.lines.append(
+                ""
+            )
+
+            self.lines.append(
+                f"auto {statement.name}("
+                + ", ".join(
+                    parameters
+                )
+                + ") {"
+            )
+
+            for child in (
+                statement.body
+            ):
+                self.generate_statement(
+                    child
+                )
+
+            self.lines.append(
+                "}"
+            )
+
+        elif isinstance(
+            statement,
+            Return,
+        ):
+
+            self.lines.append(
+                "    return "
+                + self.generate_expression(
+                    statement.value
+                )
+                + ";"
+            )
+
+
+        elif isinstance(
+            statement,
             Print,
         ):
             self.lines.append(
@@ -255,6 +333,25 @@ class CppGenerator:
                 )
                 + ")"
             )
+
+        if isinstance(
+            expression,
+            Call,
+        ):
+            return (
+                expression.name
+                + "("
+                + ", ".join(
+                    self.generate_expression(
+                        arg
+                    )
+                    for arg in (
+                        expression.arguments
+                    )
+                )
+                + ")"
+            )
+
 
         if isinstance(
             expression,

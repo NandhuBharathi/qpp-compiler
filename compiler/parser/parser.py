@@ -12,6 +12,9 @@ from compiler.ast.nodes import (
     BinaryOp,
     If,
     While,
+    Call,
+    Return,
+    Function,
 )
 
 from compiler.lexer.tokens import (
@@ -71,6 +74,12 @@ class Parser:
 
         if self.current.type == TokenType.WHILE:
             return self.parse_while()
+
+        if self.current.type == TokenType.FUNC:
+            return self.parse_function()
+
+        if self.current.type == TokenType.RETURN:
+            return self.parse_return()
 
         if (
             self.current.type == TokenType.IDENTIFIER
@@ -295,7 +304,19 @@ class Parser:
             TokenType.LPAREN
         )
 
+        while (
+            self.current.type
+            == TokenType.NEWLINE
+        ):
+            self.advance()
+
         value = self.parse_expression()
+
+        while (
+            self.current.type
+            == TokenType.NEWLINE
+        ):
+            self.advance()
 
         self.match(
             TokenType.RPAREN
@@ -364,6 +385,14 @@ class Parser:
             self.advance()
             return Boolean(False)
 
+        if (
+            token.type
+            == TokenType.IDENTIFIER
+            and self.peek().type
+            == TokenType.LPAREN
+        ):
+            return self.parse_call()
+
         if token.type == TokenType.IDENTIFIER:
             self.advance()
             return Identifier(
@@ -383,3 +412,143 @@ class Parser:
             return self.tokens[-1]
 
         return self.tokens[index]
+
+
+    def parse_call(self):
+
+        name = self.match(
+            TokenType.IDENTIFIER
+        ).value
+
+        self.match(
+            TokenType.LPAREN
+        )
+
+        arguments = []
+
+        while (
+            self.current.type
+            == TokenType.NEWLINE
+        ):
+            self.advance()
+
+        while (
+            self.current.type
+            != TokenType.RPAREN
+        ):
+
+            arguments.append(
+                self.parse_expression()
+            )
+
+            while (
+                self.current.type
+                == TokenType.NEWLINE
+            ):
+                self.advance()
+
+            if (
+                self.current.type
+                == TokenType.COMMA
+            ):
+
+                self.advance()
+
+                while (
+                    self.current.type
+                    == TokenType.NEWLINE
+                ):
+                    self.advance()
+
+            else:
+                break
+
+        self.match(
+            TokenType.RPAREN
+        )
+
+        return Call(
+            name=name,
+            arguments=arguments,
+        )
+
+
+    def parse_function(self):
+
+        self.match(
+            TokenType.FUNC
+        )
+
+        name = self.match(
+            TokenType.IDENTIFIER
+        ).value
+
+        self.match(
+            TokenType.LPAREN
+        )
+
+        parameters = []
+
+        while (
+            self.current.type
+            != TokenType.RPAREN
+        ):
+
+            parameters.append(
+                self.match(
+                    TokenType.IDENTIFIER
+                ).value
+            )
+
+            if (
+                self.current.type
+                == TokenType.COMMA
+            ):
+                self.advance()
+
+        self.match(
+            TokenType.RPAREN
+        )
+
+        self.match(
+            TokenType.LBRACE
+        )
+
+        body = []
+
+        while (
+            self.current.type
+            != TokenType.RBRACE
+        ):
+
+            if (
+                self.current.type
+                == TokenType.NEWLINE
+            ):
+                self.advance()
+                continue
+
+            body.append(
+                self.parse_statement()
+            )
+
+        self.match(
+            TokenType.RBRACE
+        )
+
+        return Function(
+            name=name,
+            parameters=parameters,
+            body=body,
+        )
+
+
+    def parse_return(self):
+
+        self.match(
+            TokenType.RETURN
+        )
+
+        return Return(
+            value=self.parse_expression()
+        )
