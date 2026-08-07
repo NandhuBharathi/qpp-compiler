@@ -126,7 +126,64 @@ class Parser:
         ):
             self.advance()
 
+        elif_blocks = []
         else_body = None
+
+        while (
+            self.current.type
+            == TokenType.ELIF
+        ):
+
+            self.advance()
+
+            elif_condition = (
+                self.parse_expression()
+            )
+
+            self.match(
+                TokenType.LBRACE
+            )
+
+            elif_body = []
+
+            while (
+                self.current.type
+                != TokenType.RBRACE
+            ):
+
+                if (
+                    self.current.type
+                    == TokenType.NEWLINE
+                ):
+                    self.advance()
+                    continue
+
+                elif_body.append(
+                    self.parse_statement()
+                )
+
+            self.match(
+                TokenType.RBRACE
+            )
+
+            while (
+                self.current.type
+                == TokenType.NEWLINE
+            ):
+                self.advance()
+
+            elif_blocks.append(
+                (
+                    elif_condition,
+                    elif_body,
+                )
+            )
+
+        while (
+            self.current.type
+            == TokenType.NEWLINE
+        ):
+            self.advance()
 
         if (
             self.current.type
@@ -164,6 +221,7 @@ class Parser:
         return If(
             condition=condition,
             body=body,
+            elif_blocks=elif_blocks,
             else_body=else_body,
         )
 

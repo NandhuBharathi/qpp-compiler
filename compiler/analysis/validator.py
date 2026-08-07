@@ -68,6 +68,22 @@ class Validator:
                     item
                 )
 
+            for (
+                elif_condition,
+                elif_body,
+            ) in (
+                statement.elif_blocks
+            ):
+
+                self.validate_expression(
+                    elif_condition
+                )
+
+                for item in elif_body:
+                    self.validate_statement(
+                        item
+                    )
+
             for item in (
                 statement.else_body or []
             ):

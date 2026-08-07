@@ -78,6 +78,7 @@ class Return(Statement):
 class If(Statement):
     condition: Expression
     body: list[Statement]
+    elif_blocks: list = field(default_factory=list)
     else_body: list[Statement] = field(default_factory=list)
 
 

@@ -115,6 +115,34 @@ class CppGenerator:
                 "    }"
             )
 
+            for (
+                elif_condition,
+                elif_body,
+            ) in (
+                statement.elif_blocks
+            ):
+
+                condition = (
+                    self.generate_expression(
+                        elif_condition
+                    )
+                )
+
+                self.lines.append(
+                    f"    else if ({condition}) {{"
+                )
+
+                for child in (
+                    elif_body
+                ):
+                    self.generate_statement(
+                        child
+                    )
+
+                self.lines.append(
+                    "    }"
+                )
+
             if (
                 statement.else_body
                 is not None
