@@ -1,6 +1,7 @@
 """Q++ parser."""
 
 from compiler.ast.nodes import (
+    Print,
     Assign,
     Identifier,
     Integer,
@@ -59,6 +60,9 @@ class Parser:
 
     def parse_statement(self):
 
+        if self.current.type == TokenType.PRINT:
+            return self.parse_print()
+
         if (
             self.current.type == TokenType.IDENTIFIER
             and self.peek().type == TokenType.ASSIGN
@@ -73,7 +77,7 @@ class Parser:
     def parse_assignment(self):
 
         name = self.match(
-            TokenType.IDENTIFIER
+            TokenType.PRINT
         ).value
 
         self.match(
@@ -86,6 +90,27 @@ class Parser:
             name=name,
             value=value,
         )
+
+    def parse_print(self):
+
+        self.match(
+            TokenType.IDENTIFIER
+        )
+
+        self.match(
+            TokenType.LPAREN
+        )
+
+        value = self.parse_expression()
+
+        self.match(
+            TokenType.RPAREN
+        )
+
+        return Print(
+            value=value
+        )
+
 
     def parse_expression(self):
 

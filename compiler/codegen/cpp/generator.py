@@ -7,6 +7,7 @@ from compiler.ast.nodes import (
     Identifier,
     Integer,
     Program,
+    Print,
     String,
 )
 
@@ -20,6 +21,7 @@ class CppGenerator:
     def generate(
         self,
         program: Program,
+    Print,
     ) -> str:
 
         self.lines = [
@@ -84,6 +86,19 @@ class CppGenerator:
                     f"    {statement.name} = "
                     f"{cpp_value};"
                 )
+
+
+        elif isinstance(
+            statement,
+            Print,
+        ):
+            self.lines.append(
+                "    std::cout << "
+                + self.generate_expression(
+                    statement.value
+                )
+                + " << std::endl;"
+            )
 
     def generate_expression(
         self,

@@ -21,6 +21,7 @@ class TokenType(Enum):
     WHILE = auto()
     FOR = auto()
     RETURN = auto()
+    PRINT = auto()
     IMPORT = auto()
     FROM = auto()
     AS = auto()
@@ -71,6 +72,7 @@ KEYWORDS = {
     "while": TokenType.WHILE,
     "for": TokenType.FOR,
     "return": TokenType.RETURN,
+    "print": TokenType.PRINT,
     "import": TokenType.IMPORT,
     "from": TokenType.FROM,
     "as": TokenType.AS,
