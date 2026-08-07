@@ -10,6 +10,7 @@ from compiler.ast.nodes import (
     Print,
     String,
     BinaryOp,
+    If,
 )
 
 
@@ -87,6 +88,31 @@ class CppGenerator:
                     f"{cpp_value};"
                 )
 
+
+        elif isinstance(
+            statement,
+            If,
+        ):
+            condition = (
+                self.generate_expression(
+                    statement.condition
+                )
+            )
+
+            self.lines.append(
+                f"    if ({condition}) {{"
+            )
+
+            for child in (
+                statement.body
+            ):
+                self.generate_statement(
+                    child
+                )
+
+            self.lines.append(
+                "    }"
+            )
 
         elif isinstance(
             statement,

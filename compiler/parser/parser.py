@@ -10,6 +10,7 @@ from compiler.ast.nodes import (
     Boolean,
     Program,
     BinaryOp,
+    If,
 )
 
 from compiler.lexer.tokens import (
@@ -64,6 +65,9 @@ class Parser:
         if self.current.type == TokenType.PRINT:
             return self.parse_print()
 
+        if self.current.type == TokenType.IF:
+            return self.parse_if()
+
         if (
             self.current.type == TokenType.IDENTIFIER
             and self.peek().type == TokenType.ASSIGN
@@ -73,6 +77,48 @@ class Parser:
         raise SyntaxError(
             f"Unexpected token "
             f"{self.current.type.name}"
+        )
+
+
+    def parse_if(self):
+
+        self.match(
+            TokenType.IF
+        )
+
+        condition = (
+            self.parse_expression()
+        )
+
+        self.match(
+            TokenType.LBRACE
+        )
+
+        body = []
+
+        while (
+            self.current.type
+            != TokenType.RBRACE
+        ):
+
+            if (
+                self.current.type
+                == TokenType.NEWLINE
+            ):
+                self.advance()
+                continue
+
+            body.append(
+                self.parse_statement()
+            )
+
+        self.match(
+            TokenType.RBRACE
+        )
+
+        return If(
+            condition=condition,
+            body=body,
         )
 
     def parse_assignment(self):
