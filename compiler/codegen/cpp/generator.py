@@ -21,7 +21,6 @@ class CppGenerator:
     def generate(
         self,
         program: Program,
-    Print,
     ) -> str:
 
         self.lines = [
