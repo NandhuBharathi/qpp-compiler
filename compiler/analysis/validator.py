@@ -2,6 +2,10 @@
 
 from compiler.ast.nodes import (
     Assign,
+    Print,
+    If,
+    Boolean,
+    Integer,
     Identifier,
     Program,
 )
@@ -19,6 +23,9 @@ class Validator:
                 statement
             )
 
+    
+    
+    
     def validate_statement(
         self,
         statement,
@@ -38,6 +45,39 @@ class Validator:
 
             return
 
+        if isinstance(
+            statement,
+            Print,
+        ):
+            self.validate_expression(
+                statement.value
+            )
+
+            return
+
+        if isinstance(
+            statement,
+            If,
+        ):
+            self.validate_expression(
+                statement.condition
+            )
+
+            for item in statement.body:
+                self.validate_statement(
+                    item
+                )
+
+            for item in (
+                statement.else_body or []
+            ):
+                self.validate_statement(
+                    item
+                )
+
+            return
+
+
     def validate_expression(
         self,
         expression,
@@ -55,3 +95,16 @@ class Validator:
                     f"Undefined variable: "
                     f"{expression.name}"
                 )
+
+
+        if isinstance(
+            expression,
+            Boolean,
+        ):
+            return
+
+        if isinstance(
+            expression,
+            Integer,
+        ):
+            return
