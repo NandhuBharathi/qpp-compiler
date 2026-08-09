@@ -7,13 +7,11 @@
 #include <vector>
 #include <memory>
 
-// Base AST Node
 class ExprAST {
 public:
     virtual ~ExprAST() = default;
     virtual llvm::Value* codegen() = 0; 
-    
-    // Default-ah ellame silent illai (output varum)
+    // Indha function dhaan output print aaganuma vendama nu mudivu pannum
     virtual bool isSilent() const { return false; } 
 };
 
@@ -52,7 +50,7 @@ public:
     llvm::Value* codegen() override;
 };
 
-// Print expression
+// Pudhusa Print expression
 class PrintExprAST : public ExprAST {
     std::unique_ptr<ExprAST> Arg;
 public:
@@ -64,15 +62,15 @@ class Parser {
     std::vector<Token> tokens;
     size_t pos;
 
-public: // Inga dhaan public irukkanum, appo dhaan main.cpp-ku access kidaikkum!
-    Parser(std::vector<Token> tokens);
-    
+public:
     Token currentToken();
     Token getNextToken();
 
+    Parser(std::vector<Token> tokens);
+    
     std::unique_ptr<ExprAST> ParseNumberExpr();
     std::unique_ptr<ExprAST> ParseIdentifierExpr();
-    std::unique_ptr<ExprAST> ParsePrintExpr();
+    std::unique_ptr<ExprAST> ParsePrintExpr(); // Print parser
     std::unique_ptr<ExprAST> ParseExpression();
 };
 
