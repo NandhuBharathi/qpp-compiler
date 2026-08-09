@@ -11,7 +11,7 @@
 class ExprAST {
 public:
     virtual ~ExprAST() = default;
-    virtual llvm::Value* codegen() = 0; // LLVM IR Create pandra function
+    virtual llvm::Value* codegen() = 0; 
 };
 
 // Numbers-kaga (e.g., 100)
@@ -36,6 +36,11 @@ public:
 class Parser {
     std::vector<Token> tokens;
     size_t pos;
+
+    // Indha rendu declarations dhaan miss aayiduchu! Ippo add panniyachu.
+    Token currentToken();
+    Token getNextToken();
+
 public:
     Parser(std::vector<Token> tokens);
     void parse(); 
