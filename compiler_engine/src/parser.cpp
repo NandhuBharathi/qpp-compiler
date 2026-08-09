@@ -227,13 +227,13 @@ std::unique_ptr<ExprAST> Parser::ParseLogicalOr() {
     return LHS;
 }
 
-// 💥 CORRECTED ENTRY POINT FOR ALL EXPRESSIONS
+// 💥 FIX APPLIED HERE: Removed erroneous Token:: prefix
 std::unique_ptr<ExprAST> Parser::ParseExpression() {
     if (currentToken().type == TOK_PRINT) return ParsePrintExpr();
 
     auto LHS = ParseLogicalOr();
     if (!LHS) {
-        if (currentToken().type == Token::TOK_IDENTIFIER || currentToken().type == TOK_IDENTIFIER) 
+        if (currentToken().type == TOK_IDENTIFIER) 
             return ParseIdentifierExpr();
         return nullptr;
     }
