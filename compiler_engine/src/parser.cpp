@@ -19,20 +19,18 @@ std::unique_ptr<ExprAST> Parser::ParseNumberExpr() {
     return std::move(result);
 }
 
-// Parse String with optional '!' prefix check
 std::unique_ptr<ExprAST> Parser::ParseStringExpr() {
     bool isTemplate = false;
     
-    // '!' vandhal adhu template string!
     if (currentToken().type == TOK_BANG) {
         isTemplate = true;
-        getNextToken(); // Consume '!'
+        getNextToken(); 
     }
 
     if (currentToken().type != TOK_STRING) return nullptr;
     
     std::string val = currentToken().value;
-    getNextToken(); // Consume string token
+    getNextToken(); 
     
     return std::make_unique<StringExprAST>(val, isTemplate);
 }
@@ -80,7 +78,6 @@ std::unique_ptr<ExprAST> Parser::ParsePrintExpr() {
     
     if (currentToken().type != TOK_RPAREN) {
         while (true) {
-            // String (with or without '!') or Expression
             if (currentToken().type == TOK_STRING || currentToken().type == TOK_BANG) {
                 args.push_back(ParseStringExpr());
             } else {
@@ -111,11 +108,13 @@ std::unique_ptr<ExprAST> Parser::ParseInputExpr() {
     
     std::string promptMessage = "Enter value: ";
 
-    if (currentToken().type == TOK_STRING || currentToken().type == TOK_BANG) {
-        // Input prompt kooda '!'-ah support pannuvom
-        bool isTemp = false;
-        if (currentToken().type == TOK_BANG) { isTemp = true; getNextToken(); }
-        if (currentToken().type == TOK_STRING) { promptMessage = currentToken().value; getNextToken(); }
+    // Warning fix: Removed unused isTemp variable check
+    if (currentToken().type == TOK_BANG) {
+        getNextToken(); 
+    }
+    if (currentToken().type == TOK_STRING) {
+        promptMessage = currentToken().value; 
+        getNextToken(); 
     }
     
     if (currentToken().type != TOK_RPAREN) return nullptr;
