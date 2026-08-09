@@ -11,7 +11,6 @@ class ExprAST {
 public:
     virtual ~ExprAST() = default;
     virtual llvm::Value* codegen() = 0; 
-    // Indha function dhaan output print aaganuma vendama nu mudivu pannum
     virtual bool isSilent() const { return false; } 
 };
 
@@ -29,15 +28,14 @@ public:
     llvm::Value* codegen() override;
 };
 
+// MULTIPLE ASSIGNMENT UPGRADE (Vector Lists)
 class AssignExprAST : public ExprAST {
-    std::string Name;
-    std::unique_ptr<ExprAST> Val;
+    std::vector<std::string> Names;             // Ippo idhu List!
+    std::vector<std::unique_ptr<ExprAST>> Vals; // Ippo idhu List!
 public:
-    AssignExprAST(std::string Name, std::unique_ptr<ExprAST> Val)
-        : Name(Name), Val(std::move(Val)) {}
+    AssignExprAST(std::vector<std::string> Names, std::vector<std::unique_ptr<ExprAST>> Vals)
+        : Names(Names), Vals(std::move(Vals)) {}
     llvm::Value* codegen() override;
-    
-    // Assignment eppovum SILENT ah dhaan irukkanum!
     bool isSilent() const override { return true; } 
 };
 
@@ -50,7 +48,6 @@ public:
     llvm::Value* codegen() override;
 };
 
-// Pudhusa Print expression
 class PrintExprAST : public ExprAST {
     std::unique_ptr<ExprAST> Arg;
 public:
@@ -62,15 +59,15 @@ class Parser {
     std::vector<Token> tokens;
     size_t pos;
 
-public:
+public: 
+    Parser(std::vector<Token> tokens);
+    
     Token currentToken();
     Token getNextToken();
 
-    Parser(std::vector<Token> tokens);
-    
     std::unique_ptr<ExprAST> ParseNumberExpr();
     std::unique_ptr<ExprAST> ParseIdentifierExpr();
-    std::unique_ptr<ExprAST> ParsePrintExpr(); // Print parser
+    std::unique_ptr<ExprAST> ParsePrintExpr();
     std::unique_ptr<ExprAST> ParseExpression();
 };
 
