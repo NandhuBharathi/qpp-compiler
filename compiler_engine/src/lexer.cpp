@@ -7,17 +7,15 @@ Token Lexer::getNextToken() {
     while (pos < src.length()) {
         char current = src[pos];
 
-        // Normal space, tab, carriage return ah skip panniduvom
-        if (current == ' ' || current == '\t' || current == '\r') { 
-            pos++; 
-            continue; 
-        }
+        if (current == ' ' || current == '\t' || current == '\r') { pos++; continue; }
 
-        // Enter (\n) or Semicolon (;) vandha adhu Separator!
         if (current == '\n' || current == ';') {
             pos++;
             return {TOK_EOL, "EOL"};
         }
+
+        // Comma-ah token-ah convert pandrom
+        if (current == ',') { pos++; return {TOK_COMMA, ","}; }
 
         if (isalpha(current)) {
             std::string val = "";

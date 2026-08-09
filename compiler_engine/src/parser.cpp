@@ -19,30 +19,51 @@ std::unique_ptr<ExprAST> Parser::ParseNumberExpr() {
     return std::move(result);
 }
 
+// MULTI-ASSIGNMENT PARSING LOGIC
 std::unique_ptr<ExprAST> Parser::ParseIdentifierExpr() {
-    std::string idName = currentToken().value;
-    getNextToken(); 
+    std::vector<std::string> names;
+    
+    // 1. Variable names-ah padikkirom
+    names.push_back(currentToken().value);
+    getNextToken();
 
-    if (currentToken().type != TOK_ASSIGN) {
-        return std::make_unique<VariableExprAST>(idName);
+    // Comma irundha adutha adutha variables-ah list-la podurom (a, b, c)
+    while (currentToken().type == TOK_COMMA) {
+        getNextToken(); // Consume ','
+        names.push_back(currentToken().value);
+        getNextToken(); // Consume variable name
     }
 
-    getNextToken(); 
-    auto val = ParseExpression();
-    return std::make_unique<AssignExprAST>(idName, std::move(val));
+    // '=' illana idhu verum read operation (e.g., a)
+    if (currentToken().type != TOK_ASSIGN) {
+        return std::make_unique<VariableExprAST>(names[0]);
+    }
+
+    getNextToken(); // Consume '='
+
+    // 2. Values-ah padikkirom
+    std::vector<std::unique_ptr<ExprAST>> vals;
+    vals.push_back(ParseExpression());
+
+    // Comma irundha adutha adutha values-ah list-la podurom (10, 20, 30)
+    while (currentToken().type == TOK_COMMA) {
+        getNextToken(); // Consume ','
+        vals.push_back(ParseExpression());
+    }
+
+    return std::make_unique<AssignExprAST>(names, std::move(vals));
 }
 
-// Print logic-ah string la irundhu padikkirom: print(expression)
 std::unique_ptr<ExprAST> Parser::ParsePrintExpr() {
-    getNextToken(); // Consume 'print'
+    getNextToken(); 
     if (currentToken().type != TOK_LPAREN) return nullptr;
-    getNextToken(); // Consume '('
+    getNextToken(); 
     
     auto Arg = ParseExpression();
     if (!Arg) return nullptr;
     
     if (currentToken().type != TOK_RPAREN) return nullptr;
-    getNextToken(); // Consume ')'
+    getNextToken(); 
     
     return std::make_unique<PrintExprAST>(std::move(Arg));
 }
@@ -50,15 +71,10 @@ std::unique_ptr<ExprAST> Parser::ParsePrintExpr() {
 std::unique_ptr<ExprAST> Parser::ParseExpression() {
     std::unique_ptr<ExprAST> LHS;
 
-    if (currentToken().type == TOK_PRINT) {
-        LHS = ParsePrintExpr();
-    } else if (currentToken().type == TOK_IDENTIFIER) {
-        LHS = ParseIdentifierExpr();
-    } else if (currentToken().type == TOK_NUMBER) {
-        LHS = ParseNumberExpr();
-    } else {
-        return nullptr;
-    }
+    if (currentToken().type == TOK_PRINT) { LHS = ParsePrintExpr(); } 
+    else if (currentToken().type == TOK_IDENTIFIER) { LHS = ParseIdentifierExpr(); } 
+    else if (currentToken().type == TOK_NUMBER) { LHS = ParseNumberExpr(); } 
+    else { return nullptr; }
 
     if (!LHS) return nullptr;
 

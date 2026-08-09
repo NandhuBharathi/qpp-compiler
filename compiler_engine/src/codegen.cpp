@@ -24,14 +24,38 @@ llvm::Value* VariableExprAST::codegen() {
     return V;
 }
 
+// MULTI-ASSIGNMENT LLVM LOGIC
 llvm::Value* AssignExprAST::codegen() {
-    llvm::Value* ValIR = Val->codegen();
-    if (!ValIR) return nullptr;
-    NamedValues[Name] = ValIR; 
-    return ValIR;
+    std::vector<llvm::Value*> evaluatedVals;
+    
+    // 1. First ella values-aiyum run panni memory-la edukkiriom
+    for (auto& v : Vals) {
+        llvm::Value* valIR = v->codegen();
+        if (!valIR) return nullptr;
+        evaluatedVals.push_back(valIR);
+    }
+
+    // Rule 1: a, b, c = 10 (Single value to all)
+    if (evaluatedVals.size() == 1) {
+        for (const auto& name : Names) {
+            NamedValues[name] = evaluatedVals[0];
+        }
+        return evaluatedVals[0]; 
+    } 
+    // Rule 2: a, b, c = 10, 20, 30 (Value matches Variable Count)
+    else if (evaluatedVals.size() == Names.size()) {
+        for (size_t i = 0; i < Names.size(); ++i) {
+            NamedValues[Names[i]] = evaluatedVals[i];
+        }
+        return evaluatedVals.back();
+    } 
+    // Error Scenario!
+    else {
+        std::cerr << "Syntax Error: Unmatched assignment count!\n";
+        return nullptr;
+    }
 }
 
-// INDHA FUNCTION DHAAN MISS AAGIRUNDHADHU!
 llvm::Value* PrintExprAST::codegen() {
     return Arg->codegen();
 }
@@ -40,8 +64,6 @@ llvm::Value* BinaryExprAST::codegen() {
     llvm::Value* L = LHS->codegen();
     llvm::Value* R = RHS->codegen();
     if (!L || !R) return nullptr;
-    
     if (Op == '+') return Builder->CreateAdd(L, R, "addtmp");
-    
     return nullptr;
 }
