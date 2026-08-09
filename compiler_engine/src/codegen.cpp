@@ -84,7 +84,6 @@ llvm::Value* PrintExprAST::codegen() {
     return nullptr;
 }
 
-// 💥 CODEGEN FOR ALL OPERATORS (+, -, *, /, %, ==, !=, <, >, <=, >=, &&, ||)
 llvm::Value* BinaryExprAST::codegen() {
     llvm::Value* L = LHS->codegen();
     llvm::Value* R = RHS->codegen();
@@ -98,7 +97,6 @@ llvm::Value* BinaryExprAST::codegen() {
     if (Op == '/') return Builder->CreateSDiv(L, R, "divtmp");
     if (Op == '%') return Builder->CreateSRem(L, R, "remtmp");
 
-    // Comparisons (Returns i1, casted to i32 for print compatibility)
     if (Op == 'E') cond = Builder->CreateICmpEQ(L, R, "eqtmp");
     else if (Op == 'N') cond = Builder->CreateICmpNE(L, R, "netmp");
     else if (Op == '<') cond = Builder->CreateICmpSLT(L, R, "slttmp");
@@ -106,7 +104,6 @@ llvm::Value* BinaryExprAST::codegen() {
     else if (Op == 'L') cond = Builder->CreateICmpSLE(L, R, "sletmp");
     else if (Op == 'G') cond = Builder->CreateICmpSGE(L, R, "sgetmp");
     
-    // Logical Operators
     else if (Op == '&') {
         llvm::Value* lBool = Builder->CreateIsNotNull(L, "lbool");
         llvm::Value* rBool = Builder->CreateIsNotNull(R, "rbool");
@@ -119,8 +116,8 @@ llvm::Value* BinaryExprAST::codegen() {
     }
 
     if (cond) {
-        // Cast i1 (true/false) to i32 (1/0) so it prints cleanly as a number!
-        return Builder->CreateIntCast(cond, llvm::Type::getInt32Ty(*TheContext), true, "boolcast");
+        // 💥 FIX: Changed 'true' (signed/sext) to 'false' (unsigned/zext) so true prints as 1 instead of -1!
+        return Builder->CreateIntCast(cond, llvm::Type::getInt32Ty(*TheContext), false, "boolcast");
     }
 
     std::cerr << "Invalid binary operator\n";
