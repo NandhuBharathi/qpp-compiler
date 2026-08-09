@@ -18,7 +18,6 @@ llvm::Value* NumberExprAST::codegen() {
     return llvm::ConstantInt::get(*TheContext, llvm::APInt(32, Val, true));
 }
 
-// String codegen (Dummy value return pannum, aana print aagum)
 llvm::Value* StringExprAST::codegen() {
     return nullptr; 
 }
@@ -53,15 +52,44 @@ llvm::Value* AssignExprAST::codegen() {
     }
 }
 
-// 💥 PRINT EXPR CODEGEN: Loop through all arguments (Strings & Variables) and print them!
+// 💥 STRING INTERPOLATION ENGINE: Replaces {var} with actual variable values!
+void printInterpolatedString(const std::string& str) {
+    size_t i = 0;
+    while (i < str.length()) {
+        if (str[i] == '{') {
+            size_t endIdx = str.find('}', i);
+            if (endIdx != std::string::npos) {
+                std::string varName = str.substr(i + 1, endIdx - i - 1);
+                // Look up in NamedValues memory map
+                llvm::Value* V = NamedValues[varName];
+                if (V) {
+                    if (auto* constInt = llvm::dyn_cast<llvm::ConstantInt>(V)) {
+                        std::cout << constInt->getSExtValue();
+                    } else {
+                        std::cout << "0";
+                    }
+                } else {
+                    std::cout << "{Undefined:" << varName << "}";
+                }
+                i = endIdx + 1;
+                continue;
+            }
+        }
+        std::cout << str[i];
+        i++;
+    }
+}
+
 llvm::Value* PrintExprAST::codegen() {
     for (size_t i = 0; i < Args.size(); ++i) {
-        // Oruvela adhu String-ah irundha direct-ah print pannuvom
         if (auto* strArg = dynamic_cast<StringExprAST*>(Args[i].get())) {
-            std::cout << strArg->getStringVal();
-        } 
-        // Illana adhu Number/Variable expression-ah irukkum, athoda value-ah print pannuvom
-        else {
+            if (strArg->isTemplate()) {
+                // If prefixed with '!', parse and inject variables!
+                printInterpolatedString(strArg->getStringVal());
+            } else {
+                std::cout << strArg->getStringVal();
+            }
+        } else {
             llvm::Value* valIR = Args[i]->codegen();
             if (valIR) {
                 if (auto* constInt = llvm::dyn_cast<llvm::ConstantInt>(valIR)) {
@@ -71,12 +99,11 @@ llvm::Value* PrintExprAST::codegen() {
                 }
             }
         }
-        // Python mari values-ku idaiyila oru space kuduppom
         if (i + 1 < Args.size()) {
             std::cout << " ";
         }
     }
-    std::cout << "\n"; // End of print newline
+    std::cout << "\n";
     return nullptr;
 }
 

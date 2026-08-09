@@ -6,8 +6,8 @@
 
 enum TokenType {
     TOK_FUNC, TOK_RETURN, TOK_IF, TOK_ELSE, TOK_PRINT, TOK_INPUT,
-    TOK_IDENTIFIER, TOK_NUMBER, 
-    TOK_STRING,     // Pudhusa String-kaga add pandrom!
+    TOK_IDENTIFIER, TOK_NUMBER, TOK_STRING,
+    TOK_BANG,       // Pudhusa '!' symbol-kaga add pandrom!
     TOK_LBRACE, TOK_RBRACE, TOK_LPAREN, TOK_RPAREN,
     TOK_ASSIGN, TOK_PLUS, TOK_GREATER, TOK_EOL, TOK_COMMA,
     TOK_EOF, TOK_UNKNOWN

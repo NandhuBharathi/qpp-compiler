@@ -19,11 +19,22 @@ std::unique_ptr<ExprAST> Parser::ParseNumberExpr() {
     return std::move(result);
 }
 
-// String token-ah AST-ku convert pandrom
+// Parse String with optional '!' prefix check
 std::unique_ptr<ExprAST> Parser::ParseStringExpr() {
-    auto result = std::make_unique<StringExprAST>(currentToken().value);
-    getNextToken();
-    return std::move(result);
+    bool isTemplate = false;
+    
+    // '!' vandhal adhu template string!
+    if (currentToken().type == TOK_BANG) {
+        isTemplate = true;
+        getNextToken(); // Consume '!'
+    }
+
+    if (currentToken().type != TOK_STRING) return nullptr;
+    
+    std::string val = currentToken().value;
+    getNextToken(); // Consume string token
+    
+    return std::make_unique<StringExprAST>(val, isTemplate);
 }
 
 std::unique_ptr<ExprAST> Parser::ParseIdentifierExpr() {
@@ -60,18 +71,17 @@ std::unique_ptr<ExprAST> Parser::ParseIdentifierExpr() {
     return std::make_unique<AssignExprAST>(names, std::move(vals));
 }
 
-// 💥 PRINT FUNCTION UPGRADE: Multiple comma-separated arguments!
 std::unique_ptr<ExprAST> Parser::ParsePrintExpr() {
-    getNextToken(); // Consume 'print'
+    getNextToken(); 
     if (currentToken().type != TOK_LPAREN) return nullptr;
-    getNextToken(); // Consume '('
+    getNextToken(); 
     
     std::vector<std::unique_ptr<ExprAST>> args;
     
     if (currentToken().type != TOK_RPAREN) {
         while (true) {
-            // Expression-ah irundhalum seri, String-ah irundhalum seri padikkirom
-            if (currentToken().type == TOK_STRING) {
+            // String (with or without '!') or Expression
+            if (currentToken().type == TOK_STRING || currentToken().type == TOK_BANG) {
                 args.push_back(ParseStringExpr());
             } else {
                 args.push_back(ParseExpression());
@@ -80,7 +90,7 @@ std::unique_ptr<ExprAST> Parser::ParsePrintExpr() {
             if (currentToken().type == TOK_RPAREN) break;
             
             if (currentToken().type == TOK_COMMA) {
-                getNextToken(); // Consume ','
+                getNextToken(); 
             } else {
                 break;
             }
@@ -88,7 +98,7 @@ std::unique_ptr<ExprAST> Parser::ParsePrintExpr() {
     }
     
     if (currentToken().type != TOK_RPAREN) return nullptr;
-    getNextToken(); // Consume ')'
+    getNextToken(); 
     
     return std::make_unique<PrintExprAST>(std::move(args));
 }
@@ -101,9 +111,11 @@ std::unique_ptr<ExprAST> Parser::ParseInputExpr() {
     
     std::string promptMessage = "Enter value: ";
 
-    if (currentToken().type == TOK_STRING) {
-        promptMessage = currentToken().value; 
-        getNextToken(); 
+    if (currentToken().type == TOK_STRING || currentToken().type == TOK_BANG) {
+        // Input prompt kooda '!'-ah support pannuvom
+        bool isTemp = false;
+        if (currentToken().type == TOK_BANG) { isTemp = true; getNextToken(); }
+        if (currentToken().type == TOK_STRING) { promptMessage = currentToken().value; getNextToken(); }
     }
     
     if (currentToken().type != TOK_RPAREN) return nullptr;
@@ -124,7 +136,7 @@ std::unique_ptr<ExprAST> Parser::ParseExpression() {
     else if (currentToken().type == TOK_INPUT) { LHS = ParseInputExpr(); } 
     else if (currentToken().type == TOK_IDENTIFIER) { LHS = ParseIdentifierExpr(); } 
     else if (currentToken().type == TOK_NUMBER) { LHS = ParseNumberExpr(); } 
-    else if (currentToken().type == TOK_STRING) { LHS = ParseStringExpr(); } // String expression support
+    else if (currentToken().type == TOK_STRING || currentToken().type == TOK_BANG) { LHS = ParseStringExpr(); } 
     else { return nullptr; }
 
     if (!LHS) return nullptr;

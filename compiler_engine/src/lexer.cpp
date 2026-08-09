@@ -13,18 +13,18 @@ Token Lexer::getNextToken() {
 
         if (current == ',') { pos++; return {TOK_COMMA, ","}; }
 
-        // 💥 MAGIC: String Reader (Double Quotes)
-        if (current == '"') {
+        // '!' symbol-ah recognize pandrom
+        if (current == '!') { pos++; return {TOK_BANG, "!"}; }
+
+        if (current == '"' || current == '\'') { // Single or Double quotes support!
+            char quoteType = current;
             std::string strVal = "";
-            pos++; // Opening quote-ah skip pandrom
-            
-            // Closing quote varaikum ulla irukka ellathaiyum padikkirom (spaces include aagum)
-            while (pos < src.length() && src[pos] != '"') {
+            pos++; 
+            while (pos < src.length() && src[pos] != quoteType) {
                 strVal += src[pos];
                 pos++;
             }
-            if (pos < src.length()) pos++; // Closing quote-ah skip pandrom
-            
+            if (pos < src.length()) pos++; 
             return {TOK_STRING, strVal};
         }
 

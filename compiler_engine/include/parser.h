@@ -21,13 +21,15 @@ public:
     llvm::Value* codegen() override;
 };
 
-// Pudhusa String-ah handle panna AST Node!
+// String AST with Interpolation flag (!) support
 class StringExprAST : public ExprAST {
     std::string Val;
+    bool IsTemplate; // True if prefixed with '!'
 public:
-    StringExprAST(std::string Val) : Val(Val) {}
+    StringExprAST(std::string Val, bool IsTemplate = false) : Val(Val), IsTemplate(IsTemplate) {}
     llvm::Value* codegen() override;
     std::string getStringVal() const { return Val; }
+    bool isTemplate() const { return IsTemplate; }
 };
 
 class VariableExprAST : public ExprAST {
@@ -56,7 +58,6 @@ public:
     llvm::Value* codegen() override;
 };
 
-// Print can now accept multiple arguments separated by commas!
 class PrintExprAST : public ExprAST {
     std::vector<std::unique_ptr<ExprAST>> Args;
 public:
@@ -75,7 +76,7 @@ public:
     Token getNextToken();
 
     std::unique_ptr<ExprAST> ParseNumberExpr();
-    std::unique_ptr<ExprAST> ParseStringExpr(); // String parser
+    std::unique_ptr<ExprAST> ParseStringExpr();
     std::unique_ptr<ExprAST> ParseIdentifierExpr();
     std::unique_ptr<ExprAST> ParsePrintExpr();
     std::unique_ptr<ExprAST> ParseInputExpr();
