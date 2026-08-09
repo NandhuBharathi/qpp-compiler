@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q++ Web Compiler</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Q++ Compiler Engine</h1>
+        </header>
+        
+        <div class="editor-section">
+            <textarea id="code-editor" spellcheck="false" placeholder="Write your Q++ code here...
+
+func calculate_total(price, tax) {
+    return price + tax
+}"></textarea>
+        </div>
+        
+        <div class="controls">
+            <button id="run-btn">Run Q++ Code</button>
+        </div>
+        
+        <div class="output-section">
+            <h3>Terminal Output:</h3>
+            <pre id="output-terminal">Ready for compilation...</pre>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
