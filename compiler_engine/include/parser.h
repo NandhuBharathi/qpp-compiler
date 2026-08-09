@@ -7,10 +7,14 @@
 #include <vector>
 #include <memory>
 
+// Base AST Node
 class ExprAST {
 public:
     virtual ~ExprAST() = default;
     virtual llvm::Value* codegen() = 0; 
+    
+    // Default-ah ellame silent illai (output varum)
+    virtual bool isSilent() const { return false; } 
 };
 
 class NumberExprAST : public ExprAST {
@@ -20,7 +24,6 @@ public:
     llvm::Value* codegen() override;
 };
 
-// Variable-ah read panna (e.g., price)
 class VariableExprAST : public ExprAST {
     std::string Name;
 public:
@@ -28,7 +31,6 @@ public:
     llvm::Value* codegen() override;
 };
 
-// Variable-ku value assign panna (e.g., price = 500)
 class AssignExprAST : public ExprAST {
     std::string Name;
     std::unique_ptr<ExprAST> Val;
@@ -36,6 +38,9 @@ public:
     AssignExprAST(std::string Name, std::unique_ptr<ExprAST> Val)
         : Name(Name), Val(std::move(Val)) {}
     llvm::Value* codegen() override;
+    
+    // Assignment eppovum SILENT ah dhaan irukkanum!
+    bool isSilent() const override { return true; } 
 };
 
 class BinaryExprAST : public ExprAST {
@@ -47,18 +52,27 @@ public:
     llvm::Value* codegen() override;
 };
 
+// Print expression
+class PrintExprAST : public ExprAST {
+    std::unique_ptr<ExprAST> Arg;
+public:
+    PrintExprAST(std::unique_ptr<ExprAST> Arg) : Arg(std::move(Arg)) {}
+    llvm::Value* codegen() override;
+};
+
 class Parser {
     std::vector<Token> tokens;
     size_t pos;
 
+public: // Inga dhaan public irukkanum, appo dhaan main.cpp-ku access kidaikkum!
+    Parser(std::vector<Token> tokens);
+    
     Token currentToken();
     Token getNextToken();
 
-public:
-    Parser(std::vector<Token> tokens);
-    
     std::unique_ptr<ExprAST> ParseNumberExpr();
-    std::unique_ptr<ExprAST> ParseIdentifierExpr(); // Pudhusa add panniyachu
+    std::unique_ptr<ExprAST> ParseIdentifierExpr();
+    std::unique_ptr<ExprAST> ParsePrintExpr();
     std::unique_ptr<ExprAST> ParseExpression();
 };
 
