@@ -2,50 +2,43 @@
 #define PARSER_H
 
 #include "lexer.h"
+#include <llvm/IR/Value.h>
 #include <string>
 #include <vector>
 #include <memory>
 
-// Base AST Node Class
+// Base AST Node
 class ExprAST {
 public:
     virtual ~ExprAST() = default;
+    virtual llvm::Value* codegen() = 0; // LLVM IR Create pandra function
 };
 
-// Numbers-kaga (e.g., 100, 200)
+// Numbers-kaga (e.g., 100)
 class NumberExprAST : public ExprAST {
-    std::string Val;
+    int Val;
 public:
-    NumberExprAST(std::string Val) : Val(Val) {}
+    NumberExprAST(int Val) : Val(Val) {}
+    llvm::Value* codegen() override;
 };
 
-// Variables-kaga (e.g., price, tax)
-class VariableExprAST : public ExprAST {
-    std::string Name;
-public:
-    VariableExprAST(std::string Name) : Name(Name) {}
-};
-
-// Math Operations-kaga (+, -, =, >)
+// Math Operations-kaga (+, -, etc.)
 class BinaryExprAST : public ExprAST {
-    std::string Op;
-    std::unique_ptr<ExprAST> LHS, RHS; // Left and Right hand sides
+    char Op;
+    std::unique_ptr<ExprAST> LHS, RHS;
 public:
-    BinaryExprAST(std::string Op, std::unique_ptr<ExprAST> LHS, std::unique_ptr<ExprAST> RHS)
+    BinaryExprAST(char Op, std::unique_ptr<ExprAST> LHS, std::unique_ptr<ExprAST> RHS)
         : Op(Op), LHS(std::move(LHS)), RHS(std::move(RHS)) {}
+    llvm::Value* codegen() override;
 };
 
 // Parser Class
 class Parser {
     std::vector<Token> tokens;
     size_t pos;
-    
-    Token currentToken();
-    Token getNextToken();
-
 public:
     Parser(std::vector<Token> tokens);
-    void parse(); // Ippo test pandrathukaga basic function
+    void parse(); 
 };
 
 #endif

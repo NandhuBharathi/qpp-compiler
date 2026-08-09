@@ -1,36 +1,32 @@
 #include <iostream>
-#include <string>
 #include "../include/lexer.h"
 #include "../include/parser.h"
 #include "../include/codegen.h"
 
-int main(int argc, char* argv[]) {
-    std::string code = "";
-    if (argc > 1) {
-        code = argv[1];
-    } else {
-        code = "func calculate_total(price) { return price + 100 }";
-    }
+int main() {
+    std::cout << "--- Q++ LLVM IR Generator Test ---" << std::endl;
 
-    std::cout << "--- Q++ Compiler Engine ---" << std::endl;
-
-    // 1. Initialize LLVM Backend
+    // LLVM Engine-ah start pandrom
     InitializeLLVM();
-    std::cout << "[LLVM] Backend Initialized Successfully." << std::endl;
 
-    // 2. Lexical Analysis
-    Lexer lexer(code);
-    std::vector<Token> tokens = lexer.tokenize();
-    std::cout << "[Lexer] Identified " << tokens.size() << " tokens." << std::endl;
+    // Manual-ah oru AST Tree create pandrom: "100 + 200"
+    auto num1 = std::make_unique<NumberExprAST>(100);
+    auto num2 = std::make_unique<NumberExprAST>(200);
+    auto mathOp = std::make_unique<BinaryExprAST>('+', std::move(num1), std::move(num2));
 
-    // 3. Parsing & AST Building
-    Parser parser(tokens);
-    parser.parse();
+    std::cout << "\n[Action] Converting AST (100 + 200) to LLVM IR..." << std::endl;
 
-    // 4. Future Step: Code Generation (AST to IR)
-    // Ingendhu dhaan namma AST nodes-ah TheModule-kulla IR ah push pannuvom.
-    
-    std::cout << "\n[Status] Engine Pipeline Ready for Code Generation!" << std::endl;
+    // AST-ah LLVM IR ah convert pandrom!
+    llvm::Value* irValue = mathOp->codegen();
+
+    if (irValue) {
+        std::cout << "\n[Success] Generated LLVM Machine IR:" << std::endl;
+        // LLVM generate panna code-ah terminal-la print pandrom
+        irValue->print(llvm::outs());
+        std::cout << "\n";
+    } else {
+        std::cout << "Error generating IR." << std::endl;
+    }
 
     return 0;
 }
