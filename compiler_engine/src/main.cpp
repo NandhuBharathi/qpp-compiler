@@ -10,7 +10,8 @@ int main(int argc, char* argv[]) {
     if (argc > 1) {
         code = argv[1];
     } else {
-        code = "total = 70 + 90 \n print(total)"; 
+        // Correct Order: Initialize first, copy next, add and print!
+        code = "x,y,z = 10,20,30; a,b,c = x,y,z; total = a+b+c; print(total)"; 
     }
 
     InitializeLLVM();
@@ -19,7 +20,6 @@ int main(int argc, char* argv[]) {
     Parser parser(tokens);
 
     while (parser.currentToken().type != TOK_EOF) {
-        // Empty lines illa extra semicolons irundha athai ignore panniduvom
         if (parser.currentToken().type == TOK_EOL) {
             parser.getNextToken();
             continue;
@@ -28,7 +28,6 @@ int main(int argc, char* argv[]) {
         auto astTree = parser.ParseExpression();
         
         if (astTree) {
-            // THE STRICT CHECK: Expression mudinjadhum \n illa ; irukka nu paakurom
             if (parser.currentToken().type != TOK_EOL && parser.currentToken().type != TOK_EOF) {
                 std::cout << "Syntax Error: Expected newline or ';' between statements.\n";
                 break;

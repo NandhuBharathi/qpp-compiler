@@ -19,33 +19,40 @@ std::unique_ptr<ExprAST> Parser::ParseNumberExpr() {
     return std::move(result);
 }
 
-// MULTI-ASSIGNMENT PARSING LOGIC
+// BUG FIX: Smart Lookahead for Identifiers
 std::unique_ptr<ExprAST> Parser::ParseIdentifierExpr() {
-    std::vector<std::string> names;
+    std::string idName = currentToken().value;
     
-    // 1. Variable names-ah padikkirom
-    names.push_back(currentToken().value);
-    getNextToken();
+    // LOOKAHEAD: Munnadi poy '=' irukka nu check pandrom!
+    bool isAssign = false;
+    for (size_t i = pos; i < tokens.size(); i++) {
+        if (tokens[i].type == TOK_ASSIGN) { isAssign = true; break; }
+        // Identifier illa Comma thavira vera edhu vandhalum idhu assignment illa nu mudivu panniduvom
+        if (tokens[i].type != TOK_IDENTIFIER && tokens[i].type != TOK_COMMA) break; 
+    }
 
-    // Comma irundha adutha adutha variables-ah list-la podurom (a, b, c)
+    getNextToken(); // Consume the first identifier
+
+    // Assignment illana, idhu verum Variable Read! (Commas-ah eat pannadhu)
+    if (!isAssign) {
+        return std::make_unique<VariableExprAST>(idName);
+    }
+
+    // Assignment aaga irundha mattum commas-ah read panni List aakkanum
+    std::vector<std::string> names;
+    names.push_back(idName);
+
     while (currentToken().type == TOK_COMMA) {
         getNextToken(); // Consume ','
         names.push_back(currentToken().value);
         getNextToken(); // Consume variable name
     }
 
-    // '=' illana idhu verum read operation (e.g., a)
-    if (currentToken().type != TOK_ASSIGN) {
-        return std::make_unique<VariableExprAST>(names[0]);
-    }
-
     getNextToken(); // Consume '='
 
-    // 2. Values-ah padikkirom
     std::vector<std::unique_ptr<ExprAST>> vals;
     vals.push_back(ParseExpression());
 
-    // Comma irundha adutha adutha values-ah list-la podurom (10, 20, 30)
     while (currentToken().type == TOK_COMMA) {
         getNextToken(); // Consume ','
         vals.push_back(ParseExpression());
