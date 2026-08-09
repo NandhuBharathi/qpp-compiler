@@ -4,31 +4,100 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Q++ Web Compiler</title>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e;
+            color: #ffffff;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h2 {
+            color: #4af626;
+            text-align: center;
+        }
+        .editor-section, .input-section, .terminal-section {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #f39c12;
+        }
+        textarea {
+            width: 100%;
+            background-color: #2d2d2d;
+            color: #ffffff;
+            border: 1px solid #444;
+            padding: 12px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 14px;
+            border-radius: 4px;
+            resize: vertical;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #4af626;
+            color: #000;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            width: 100%;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #38b51d;
+        }
+        #output-terminal {
+            background-color: #111;
+            color: #4af626;
+            padding: 15px;
+            border: 1px solid #333;
+            min-height: 120px;
+            font-family: 'Courier New', Courier, monospace;
+            white-space: pre-wrap;
+            border-radius: 4px;
+        }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>Q++ Compiler Engine</h1>
-        </header>
-        
-        <div class="editor-section">
-            <textarea id="code-editor" spellcheck="false" placeholder="Write your Q++ code here...
 
-func calculate_total(price, tax) {
-    return price + tax
-}"></textarea>
-        </div>
+    <div class="container">
+        <h2>🚀 Q++ Compiler Engine</h2>
         
-        <div class="controls">
+        <!-- Code Editor Box -->
+        <div class="editor-section">
+            <label for="code-editor">Q++ Source Code:</label>
+            <textarea id="code-editor" rows="8" placeholder="Type your Q++ code here... (e.g., a = input('Enter value: '); print(a + 10))"></textarea>
+        </div>
+
+        <!-- Custom Input Box -->
+        <div class="input-section">
+            <label for="custom-input">Custom Input (for input() function):</label>
+            <textarea id="custom-input" rows="3" placeholder="Enter input values here..."></textarea>
+        </div>
+
+        <!-- Run Button -->
+        <div class="button-section">
             <button id="run-btn">Run Q++ Code</button>
         </div>
-        
-        <div class="output-section">
-            <h3>Terminal Output:</h3>
-            <pre id="output-terminal">Ready for compilation...</pre>
+
+        <!-- Output Terminal Box -->
+        <div class="terminal-section">
+            <label for="output-terminal">Output Terminal:</label>
+            <div id="output-terminal">Ready to compile...</div>
         </div>
     </div>
+
+    <!-- Linking our JavaScript file -->
     <script src="script.js"></script>
 </body>
 </html>
