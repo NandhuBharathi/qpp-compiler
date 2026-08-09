@@ -2,7 +2,7 @@ CXX = g++
 CXXFLAGS = -Wall -std=c++17 -I./include
 
 SRC_DIR = src
-SOURCES = $(SRC_DIR)/main.cpp $(SRC_DIR)/lexer.cpp
+SOURCES = $(SRC_DIR)/main.cpp $(SRC_DIR)/lexer.cpp $(SRC_DIR)/parser.cpp
 TARGET = qpp_engine
 
 all: $(TARGET)
