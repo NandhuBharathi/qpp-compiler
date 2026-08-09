@@ -8,15 +8,11 @@ Token Lexer::getNextToken() {
         char current = src[pos];
 
         if (current == ' ' || current == '\t' || current == '\r') { pos++; continue; }
-
         if (current == '\n' || current == ';') { pos++; return {TOK_EOL, "EOL"}; }
-
         if (current == ',') { pos++; return {TOK_COMMA, ","}; }
-
-        // '!' symbol-ah recognize pandrom
         if (current == '!') { pos++; return {TOK_BANG, "!"}; }
 
-        if (current == '"' || current == '\'') { // Single or Double quotes support!
+        if (current == '"' || current == '\'') {
             char quoteType = current;
             std::string strVal = "";
             pos++; 
@@ -57,7 +53,13 @@ Token Lexer::getNextToken() {
         if (current == '(') { pos++; return {TOK_LPAREN, "("}; }
         if (current == ')') { pos++; return {TOK_RPAREN, ")"}; }
         if (current == '=') { pos++; return {TOK_ASSIGN, "="}; }
+        
+        // 💥 Arithmetic Operators Recognition
         if (current == '+') { pos++; return {TOK_PLUS, "+"}; }
+        if (current == '-') { pos++; return {TOK_MINUS, "-"}; }
+        if (current == '*') { pos++; return {TOK_MUL, "*"}; }
+        if (current == '/') { pos++; return {TOK_DIV, "/"}; }
+        
         if (current == '>') { pos++; return {TOK_GREATER, ">"}; }
 
         pos++;

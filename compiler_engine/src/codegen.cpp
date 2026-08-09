@@ -52,7 +52,6 @@ llvm::Value* AssignExprAST::codegen() {
     }
 }
 
-// 💥 STRING INTERPOLATION ENGINE: Replaces {var} with actual variable values!
 void printInterpolatedString(const std::string& str) {
     size_t i = 0;
     while (i < str.length()) {
@@ -60,7 +59,6 @@ void printInterpolatedString(const std::string& str) {
             size_t endIdx = str.find('}', i);
             if (endIdx != std::string::npos) {
                 std::string varName = str.substr(i + 1, endIdx - i - 1);
-                // Look up in NamedValues memory map
                 llvm::Value* V = NamedValues[varName];
                 if (V) {
                     if (auto* constInt = llvm::dyn_cast<llvm::ConstantInt>(V)) {
@@ -84,7 +82,6 @@ llvm::Value* PrintExprAST::codegen() {
     for (size_t i = 0; i < Args.size(); ++i) {
         if (auto* strArg = dynamic_cast<StringExprAST*>(Args[i].get())) {
             if (strArg->isTemplate()) {
-                // If prefixed with '!', parse and inject variables!
                 printInterpolatedString(strArg->getStringVal());
             } else {
                 std::cout << strArg->getStringVal();
@@ -107,10 +104,17 @@ llvm::Value* PrintExprAST::codegen() {
     return nullptr;
 }
 
+// 💥 ALL ARITHMETIC OPERATORS CODEGEN (+, -, *, /)
 llvm::Value* BinaryExprAST::codegen() {
     llvm::Value* L = LHS->codegen();
     llvm::Value* R = RHS->codegen();
     if (!L || !R) return nullptr;
+
     if (Op == '+') return Builder->CreateAdd(L, R, "addtmp");
+    if (Op == '-') return Builder->CreateSub(L, R, "subtmp");
+    if (Op == '*') return Builder->CreateMul(L, R, "multmp");
+    if (Op == '/') return Builder->CreateSDiv(L, R, "divtmp"); // Signed Division
+
+    std::cerr << "Invalid binary operator\n";
     return nullptr;
 }

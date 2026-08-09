@@ -21,17 +21,13 @@ std::unique_ptr<ExprAST> Parser::ParseNumberExpr() {
 
 std::unique_ptr<ExprAST> Parser::ParseStringExpr() {
     bool isTemplate = false;
-    
     if (currentToken().type == TOK_BANG) {
         isTemplate = true;
         getNextToken(); 
     }
-
     if (currentToken().type != TOK_STRING) return nullptr;
-    
     std::string val = currentToken().value;
     getNextToken(); 
-    
     return std::make_unique<StringExprAST>(val, isTemplate);
 }
 
@@ -102,13 +98,11 @@ std::unique_ptr<ExprAST> Parser::ParsePrintExpr() {
 
 std::unique_ptr<ExprAST> Parser::ParseInputExpr() {
     getNextToken(); 
-    
     if (currentToken().type != TOK_LPAREN) return nullptr;
     getNextToken(); 
     
     std::string promptMessage = "Enter value: ";
 
-    // Warning fix: Removed unused isTemp variable check
     if (currentToken().type == TOK_BANG) {
         getNextToken(); 
     }
@@ -140,11 +134,14 @@ std::unique_ptr<ExprAST> Parser::ParseExpression() {
 
     if (!LHS) return nullptr;
 
-    if (currentToken().type == TOK_PLUS) {
+    // 💥 MULTI-OPERATOR CHECK (+, -, *, /)
+    while (currentToken().type == TOK_PLUS || currentToken().type == TOK_MINUS || 
+           currentToken().type == TOK_MUL || currentToken().type == TOK_DIV) {
+        char op = currentToken().value[0];
         getNextToken();
         auto RHS = ParseExpression();
         if (!RHS) return nullptr;
-        return std::make_unique<BinaryExprAST>('+', std::move(LHS), std::move(RHS));
+        LHS = std::make_unique<BinaryExprAST>(op, std::move(LHS), std::move(RHS));
     }
 
     return LHS;
