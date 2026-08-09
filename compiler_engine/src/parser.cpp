@@ -122,27 +122,73 @@ std::unique_ptr<ExprAST> Parser::ParseInputExpr() {
     return std::make_unique<NumberExprAST>(userValue);
 }
 
-std::unique_ptr<ExprAST> Parser::ParseExpression() {
-    std::unique_ptr<ExprAST> LHS;
+// 💥 1. ParsePrimary: Numbers, Variables, Inputs, and Parentheses ( )
+std::unique_ptr<ExprAST> Parser::ParsePrimary() {
+    if (currentToken().type == TOK_NUMBER) {
+        return ParseNumberExpr();
+    }
+    if (currentToken().type == TOK_IDENTIFIER) {
+        return ParseIdentifierExpr();
+    }
+    if (currentToken().type == TOK_INPUT) {
+        return ParseInputExpr();
+    }
+    if (currentToken().type == TOK_STRING || currentToken().type == TOK_BANG) {
+        return ParseStringExpr();
+    }
+    
+    // Parentheses (BODMAS Brackets Support!)
+    if (currentToken().type == TOK_LPAREN) {
+        getNextToken(); // Consume '('
+        auto node = ParseExpression();
+        if (!node) return nullptr;
+        if (currentToken().type != TOK_RPAREN) {
+            std::cerr << "Error: Expected ')'\n";
+            return nullptr;
+        }
+        getNextToken(); // Consume ')'
+        return node;
+    }
 
-    if (currentToken().type == TOK_PRINT) { LHS = ParsePrintExpr(); }
-    else if (currentToken().type == TOK_INPUT) { LHS = ParseInputExpr(); } 
-    else if (currentToken().type == TOK_IDENTIFIER) { LHS = ParseIdentifierExpr(); } 
-    else if (currentToken().type == TOK_NUMBER) { LHS = ParseNumberExpr(); } 
-    else if (currentToken().type == TOK_STRING || currentToken().type == TOK_BANG) { LHS = ParseStringExpr(); } 
-    else { return nullptr; }
+    return nullptr;
+}
 
+// 💥 2. ParseTerm: Higher Precedence (* and /)
+std::unique_ptr<ExprAST> Parser::ParseTerm() {
+    auto LHS = ParsePrimary();
     if (!LHS) return nullptr;
 
-    // 💥 MULTI-OPERATOR CHECK (+, -, *, /)
-    while (currentToken().type == TOK_PLUS || currentToken().type == TOK_MINUS || 
-           currentToken().type == TOK_MUL || currentToken().type == TOK_DIV) {
+    while (currentToken().type == TOK_MUL || currentToken().type == TOK_DIV) {
         char op = currentToken().value[0];
         getNextToken();
-        auto RHS = ParseExpression();
+        auto RHS = ParsePrimary();
         if (!RHS) return nullptr;
         LHS = std::make_unique<BinaryExprAST>(op, std::move(LHS), std::move(RHS));
     }
+    return LHS;
+}
 
+// 💥 3. ParseExpression: Lower Precedence (+ and -)
+std::unique_ptr<ExprAST> Parser::ParseExpression() {
+    // If it's a print statement or assignment starting with identifier
+    if (currentToken().type == TOK_PRINT) {
+        return ParsePrintExpr();
+    }
+
+    auto LHS = ParseTerm();
+    if (!LHS) {
+        if (currentToken().type == TOK_IDENTIFIER) {
+            return ParseIdentifierExpr(); // Handles variable assignments like a = 10
+        }
+        return nullptr;
+    }
+
+    while (currentToken().type == TOK_PLUS || currentToken().type == TOK_MINUS) {
+        char op = currentToken().value[0];
+        getNextToken();
+        auto RHS = ParseTerm();
+        if (!RHS) return nullptr;
+        LHS = std::make_unique<BinaryExprAST>(op, std::move(LHS), std::move(RHS));
+    }
     return LHS;
 }

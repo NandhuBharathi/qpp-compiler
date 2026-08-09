@@ -21,10 +21,9 @@ public:
     llvm::Value* codegen() override;
 };
 
-// String AST with Interpolation flag (!) support
 class StringExprAST : public ExprAST {
     std::string Val;
-    bool IsTemplate; // True if prefixed with '!'
+    bool IsTemplate;
 public:
     StringExprAST(std::string Val, bool IsTemplate = false) : Val(Val), IsTemplate(IsTemplate) {}
     llvm::Value* codegen() override;
@@ -80,7 +79,11 @@ public:
     std::unique_ptr<ExprAST> ParseIdentifierExpr();
     std::unique_ptr<ExprAST> ParsePrintExpr();
     std::unique_ptr<ExprAST> ParseInputExpr();
-    std::unique_ptr<ExprAST> ParseExpression();
+    
+    // 💥 BODMAS Precedence Hierarchy Functions
+    std::unique_ptr<ExprAST> ParsePrimary(); // Numbers, Variables, Inputs, Brackets ( )
+    std::unique_ptr<ExprAST> ParseTerm();    // * and / (Higher Priority)
+    std::unique_ptr<ExprAST> ParseExpression(); // + and - (Lower Priority)
 };
 
 #endif
