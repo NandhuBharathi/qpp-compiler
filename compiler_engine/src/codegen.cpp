@@ -18,46 +18,66 @@ llvm::Value* NumberExprAST::codegen() {
     return llvm::ConstantInt::get(*TheContext, llvm::APInt(32, Val, true));
 }
 
+// String codegen (Dummy value return pannum, aana print aagum)
+llvm::Value* StringExprAST::codegen() {
+    return nullptr; 
+}
+
 llvm::Value* VariableExprAST::codegen() {
     llvm::Value* V = NamedValues[Name];
     if (!V) { std::cerr << "Unknown variable name: " << Name << "\n"; return nullptr; }
     return V;
 }
 
-// MULTI-ASSIGNMENT LLVM LOGIC
 llvm::Value* AssignExprAST::codegen() {
     std::vector<llvm::Value*> evaluatedVals;
-    
-    // 1. First ella values-aiyum run panni memory-la edukkiriom
     for (auto& v : Vals) {
         llvm::Value* valIR = v->codegen();
         if (!valIR) return nullptr;
         evaluatedVals.push_back(valIR);
     }
 
-    // Rule 1: a, b, c = 10 (Single value to all)
     if (evaluatedVals.size() == 1) {
         for (const auto& name : Names) {
             NamedValues[name] = evaluatedVals[0];
         }
         return evaluatedVals[0]; 
-    } 
-    // Rule 2: a, b, c = 10, 20, 30 (Value matches Variable Count)
-    else if (evaluatedVals.size() == Names.size()) {
+    } else if (evaluatedVals.size() == Names.size()) {
         for (size_t i = 0; i < Names.size(); ++i) {
             NamedValues[Names[i]] = evaluatedVals[i];
         }
         return evaluatedVals.back();
-    } 
-    // Error Scenario!
-    else {
+    } else {
         std::cerr << "Syntax Error: Unmatched assignment count!\n";
         return nullptr;
     }
 }
 
+// 💥 PRINT EXPR CODEGEN: Loop through all arguments (Strings & Variables) and print them!
 llvm::Value* PrintExprAST::codegen() {
-    return Arg->codegen();
+    for (size_t i = 0; i < Args.size(); ++i) {
+        // Oruvela adhu String-ah irundha direct-ah print pannuvom
+        if (auto* strArg = dynamic_cast<StringExprAST*>(Args[i].get())) {
+            std::cout << strArg->getStringVal();
+        } 
+        // Illana adhu Number/Variable expression-ah irukkum, athoda value-ah print pannuvom
+        else {
+            llvm::Value* valIR = Args[i]->codegen();
+            if (valIR) {
+                if (auto* constInt = llvm::dyn_cast<llvm::ConstantInt>(valIR)) {
+                    std::cout << constInt->getSExtValue();
+                } else {
+                    valIR->print(llvm::outs());
+                }
+            }
+        }
+        // Python mari values-ku idaiyila oru space kuduppom
+        if (i + 1 < Args.size()) {
+            std::cout << " ";
+        }
+    }
+    std::cout << "\n"; // End of print newline
+    return nullptr;
 }
 
 llvm::Value* BinaryExprAST::codegen() {

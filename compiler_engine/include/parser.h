@@ -21,6 +21,15 @@ public:
     llvm::Value* codegen() override;
 };
 
+// Pudhusa String-ah handle panna AST Node!
+class StringExprAST : public ExprAST {
+    std::string Val;
+public:
+    StringExprAST(std::string Val) : Val(Val) {}
+    llvm::Value* codegen() override;
+    std::string getStringVal() const { return Val; }
+};
+
 class VariableExprAST : public ExprAST {
     std::string Name;
 public:
@@ -47,10 +56,11 @@ public:
     llvm::Value* codegen() override;
 };
 
+// Print can now accept multiple arguments separated by commas!
 class PrintExprAST : public ExprAST {
-    std::unique_ptr<ExprAST> Arg;
+    std::vector<std::unique_ptr<ExprAST>> Args;
 public:
-    PrintExprAST(std::unique_ptr<ExprAST> Arg) : Arg(std::move(Arg)) {}
+    PrintExprAST(std::vector<std::unique_ptr<ExprAST>> Args) : Args(std::move(Args)) {}
     llvm::Value* codegen() override;
 };
 
@@ -65,9 +75,10 @@ public:
     Token getNextToken();
 
     std::unique_ptr<ExprAST> ParseNumberExpr();
+    std::unique_ptr<ExprAST> ParseStringExpr(); // String parser
     std::unique_ptr<ExprAST> ParseIdentifierExpr();
     std::unique_ptr<ExprAST> ParsePrintExpr();
-    std::unique_ptr<ExprAST> ParseInputExpr(); // Pudhusa Input Parse Pandra function
+    std::unique_ptr<ExprAST> ParseInputExpr();
     std::unique_ptr<ExprAST> ParseExpression();
 };
 

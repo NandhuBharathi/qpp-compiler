@@ -19,6 +19,13 @@ std::unique_ptr<ExprAST> Parser::ParseNumberExpr() {
     return std::move(result);
 }
 
+// String token-ah AST-ku convert pandrom
+std::unique_ptr<ExprAST> Parser::ParseStringExpr() {
+    auto result = std::make_unique<StringExprAST>(currentToken().value);
+    getNextToken();
+    return std::move(result);
+}
+
 std::unique_ptr<ExprAST> Parser::ParseIdentifierExpr() {
     std::string idName = currentToken().value;
     
@@ -53,15 +60,37 @@ std::unique_ptr<ExprAST> Parser::ParseIdentifierExpr() {
     return std::make_unique<AssignExprAST>(names, std::move(vals));
 }
 
+// 💥 PRINT FUNCTION UPGRADE: Multiple comma-separated arguments!
 std::unique_ptr<ExprAST> Parser::ParsePrintExpr() {
-    getNextToken(); 
+    getNextToken(); // Consume 'print'
     if (currentToken().type != TOK_LPAREN) return nullptr;
-    getNextToken(); 
-    auto Arg = ParseExpression();
-    if (!Arg) return nullptr;
+    getNextToken(); // Consume '('
+    
+    std::vector<std::unique_ptr<ExprAST>> args;
+    
+    if (currentToken().type != TOK_RPAREN) {
+        while (true) {
+            // Expression-ah irundhalum seri, String-ah irundhalum seri padikkirom
+            if (currentToken().type == TOK_STRING) {
+                args.push_back(ParseStringExpr());
+            } else {
+                args.push_back(ParseExpression());
+            }
+            
+            if (currentToken().type == TOK_RPAREN) break;
+            
+            if (currentToken().type == TOK_COMMA) {
+                getNextToken(); // Consume ','
+            } else {
+                break;
+            }
+        }
+    }
+    
     if (currentToken().type != TOK_RPAREN) return nullptr;
-    getNextToken(); 
-    return std::make_unique<PrintExprAST>(std::move(Arg));
+    getNextToken(); // Consume ')'
+    
+    return std::make_unique<PrintExprAST>(std::move(args));
 }
 
 std::unique_ptr<ExprAST> Parser::ParseInputExpr() {
@@ -81,7 +110,6 @@ std::unique_ptr<ExprAST> Parser::ParseInputExpr() {
     getNextToken(); 
 
     int userValue = 0;
-    // 💥 CHANGE HERE: Print prompt and move to newline so outputs don't glue together!
     std::cout << promptMessage << "\n"; 
     std::cout.flush(); 
     std::cin >> userValue;
@@ -96,6 +124,7 @@ std::unique_ptr<ExprAST> Parser::ParseExpression() {
     else if (currentToken().type == TOK_INPUT) { LHS = ParseInputExpr(); } 
     else if (currentToken().type == TOK_IDENTIFIER) { LHS = ParseIdentifierExpr(); } 
     else if (currentToken().type == TOK_NUMBER) { LHS = ParseNumberExpr(); } 
+    else if (currentToken().type == TOK_STRING) { LHS = ParseStringExpr(); } // String expression support
     else { return nullptr; }
 
     if (!LHS) return nullptr;
