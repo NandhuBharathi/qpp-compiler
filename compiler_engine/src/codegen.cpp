@@ -18,9 +18,7 @@ llvm::Value* NumberExprAST::codegen() {
     return llvm::ConstantInt::get(*TheContext, llvm::APInt(32, Val, true));
 }
 
-llvm::Value* StringExprAST::codegen() {
-    return nullptr; 
-}
+llvm::Value* StringExprAST::codegen() { return nullptr; }
 
 llvm::Value* VariableExprAST::codegen() {
     llvm::Value* V = NamedValues[Name];
@@ -35,21 +33,14 @@ llvm::Value* AssignExprAST::codegen() {
         if (!valIR) return nullptr;
         evaluatedVals.push_back(valIR);
     }
-
     if (evaluatedVals.size() == 1) {
-        for (const auto& name : Names) {
-            NamedValues[name] = evaluatedVals[0];
-        }
-        return evaluatedVals[0]; 
+        for (const auto& name : Names) NamedValues[name] = evaluatedVals[0];
+        return evaluatedVals[0];
     } else if (evaluatedVals.size() == Names.size()) {
-        for (size_t i = 0; i < Names.size(); ++i) {
-            NamedValues[Names[i]] = evaluatedVals[i];
-        }
+        for (size_t i = 0; i < Names.size(); ++i) NamedValues[Names[i]] = evaluatedVals[i];
         return evaluatedVals.back();
-    } else {
-        std::cerr << "Syntax Error: Unmatched assignment count!\n";
-        return nullptr;
     }
+    return nullptr;
 }
 
 void printInterpolatedString(const std::string& str) {
@@ -63,12 +54,8 @@ void printInterpolatedString(const std::string& str) {
                 if (V) {
                     if (auto* constInt = llvm::dyn_cast<llvm::ConstantInt>(V)) {
                         std::cout << constInt->getSExtValue();
-                    } else {
-                        std::cout << "0";
-                    }
-                } else {
-                    std::cout << "{Undefined:" << varName << "}";
-                }
+                    } else { std::cout << "0"; }
+                } else { std::cout << "{Undefined:" << varName << "}"; }
                 i = endIdx + 1;
                 continue;
             }
@@ -81,39 +68,60 @@ void printInterpolatedString(const std::string& str) {
 llvm::Value* PrintExprAST::codegen() {
     for (size_t i = 0; i < Args.size(); ++i) {
         if (auto* strArg = dynamic_cast<StringExprAST*>(Args[i].get())) {
-            if (strArg->isTemplate()) {
-                printInterpolatedString(strArg->getStringVal());
-            } else {
-                std::cout << strArg->getStringVal();
-            }
+            if (strArg->isTemplate()) printInterpolatedString(strArg->getStringVal());
+            else std::cout << strArg->getStringVal();
         } else {
             llvm::Value* valIR = Args[i]->codegen();
             if (valIR) {
                 if (auto* constInt = llvm::dyn_cast<llvm::ConstantInt>(valIR)) {
                     std::cout << constInt->getSExtValue();
-                } else {
-                    valIR->print(llvm::outs());
-                }
+                } else { valIR->print(llvm::outs()); }
             }
         }
-        if (i + 1 < Args.size()) {
-            std::cout << " ";
-        }
+        if (i + 1 < Args.size()) std::cout << " ";
     }
     std::cout << "\n";
     return nullptr;
 }
 
-// 💥 ALL ARITHMETIC OPERATORS CODEGEN (+, -, *, /)
+// 💥 CODEGEN FOR ALL OPERATORS (+, -, *, /, %, ==, !=, <, >, <=, >=, &&, ||)
 llvm::Value* BinaryExprAST::codegen() {
     llvm::Value* L = LHS->codegen();
     llvm::Value* R = RHS->codegen();
     if (!L || !R) return nullptr;
 
+    llvm::Value* cond = nullptr;
+
     if (Op == '+') return Builder->CreateAdd(L, R, "addtmp");
     if (Op == '-') return Builder->CreateSub(L, R, "subtmp");
     if (Op == '*') return Builder->CreateMul(L, R, "multmp");
-    if (Op == '/') return Builder->CreateSDiv(L, R, "divtmp"); // Signed Division
+    if (Op == '/') return Builder->CreateSDiv(L, R, "divtmp");
+    if (Op == '%') return Builder->CreateSRem(L, R, "remtmp");
+
+    // Comparisons (Returns i1, casted to i32 for print compatibility)
+    if (Op == 'E') cond = Builder->CreateICmpEQ(L, R, "eqtmp");
+    else if (Op == 'N') cond = Builder->CreateICmpNE(L, R, "netmp");
+    else if (Op == '<') cond = Builder->CreateICmpSLT(L, R, "slttmp");
+    else if (Op == '>') cond = Builder->CreateICmpSGT(L, R, "sgttmp");
+    else if (Op == 'L') cond = Builder->CreateICmpSLE(L, R, "sletmp");
+    else if (Op == 'G') cond = Builder->CreateICmpSGE(L, R, "sgetmp");
+    
+    // Logical Operators
+    else if (Op == '&') {
+        llvm::Value* lBool = Builder->CreateIsNotNull(L, "lbool");
+        llvm::Value* rBool = Builder->CreateIsNotNull(R, "rbool");
+        cond = Builder->CreateAnd(lBool, rBool, "andtmp");
+    }
+    else if (Op == '|') {
+        llvm::Value* lBool = Builder->CreateIsNotNull(L, "lbool");
+        llvm::Value* rBool = Builder->CreateIsNotNull(R, "rbool");
+        cond = Builder->CreateOr(lBool, rBool, "ortmp");
+    }
+
+    if (cond) {
+        // Cast i1 (true/false) to i32 (1/0) so it prints cleanly as a number!
+        return Builder->CreateIntCast(cond, llvm::Type::getInt32Ty(*TheContext), true, "boolcast");
+    }
 
     std::cerr << "Invalid binary operator\n";
     return nullptr;

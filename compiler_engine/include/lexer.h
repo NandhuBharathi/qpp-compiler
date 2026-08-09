@@ -9,8 +9,10 @@ enum TokenType {
     TOK_IDENTIFIER, TOK_NUMBER, TOK_STRING, TOK_BANG,
     TOK_LBRACE, TOK_RBRACE, TOK_LPAREN, TOK_RPAREN,
     TOK_ASSIGN, 
-    TOK_PLUS, TOK_MINUS, TOK_MUL, TOK_DIV, // 💥 Arithmetic Operators!
-    TOK_GREATER, TOK_EOL, TOK_COMMA,
+    TOK_PLUS, TOK_MINUS, TOK_MUL, TOK_DIV, TOK_MOD, // Arithmetic & Modulus
+    TOK_EQ, TOK_NE, TOK_LT, TOK_GT, TOK_LE, TOK_GE,   // Comparisons (==, !=, <, >, <=, >=)
+    TOK_AND, TOK_OR,                                  // Logical (&&, ||)
+    TOK_EOL, TOK_COMMA,
     TOK_EOF, TOK_UNKNOWN
 };
 

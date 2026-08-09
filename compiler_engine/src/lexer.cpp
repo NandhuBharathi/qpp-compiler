@@ -10,7 +10,32 @@ Token Lexer::getNextToken() {
         if (current == ' ' || current == '\t' || current == '\r') { pos++; continue; }
         if (current == '\n' || current == ';') { pos++; return {TOK_EOL, "EOL"}; }
         if (current == ',') { pos++; return {TOK_COMMA, ","}; }
-        if (current == '!') { pos++; return {TOK_BANG, "!"}; }
+        if (current == '!') {
+            // Check for '!='
+            if (pos + 1 < src.length() && src[pos + 1] == '=') {
+                pos += 2;
+                return {TOK_NE, "!="};
+            }
+            pos++; 
+            return {TOK_BANG, "!"};
+        }
+
+        // Multi-character Operators (==, <=, >=, &&, ||)
+        if (current == '=' && pos + 1 < src.length() && src[pos + 1] == '=') {
+            pos += 2; return {TOK_EQ, "=="};
+        }
+        if (current == '<' && pos + 1 < src.length() && src[pos + 1] == '=') {
+            pos += 2; return {TOK_LE, "<="};
+        }
+        if (current == '>' && pos + 1 < src.length() && src[pos + 1] == '=') {
+            pos += 2; return {TOK_GE, ">="};
+        }
+        if (current == '&' && pos + 1 < src.length() && src[pos + 1] == '&') {
+            pos += 2; return {TOK_AND, "&&"};
+        }
+        if (current == '|' && pos + 1 < src.length() && src[pos + 1] == '|') {
+            pos += 2; return {TOK_OR, "||"};
+        }
 
         if (current == '"' || current == '\'') {
             char quoteType = current;
@@ -54,13 +79,14 @@ Token Lexer::getNextToken() {
         if (current == ')') { pos++; return {TOK_RPAREN, ")"}; }
         if (current == '=') { pos++; return {TOK_ASSIGN, "="}; }
         
-        // 💥 Arithmetic Operators Recognition
         if (current == '+') { pos++; return {TOK_PLUS, "+"}; }
         if (current == '-') { pos++; return {TOK_MINUS, "-"}; }
         if (current == '*') { pos++; return {TOK_MUL, "*"}; }
         if (current == '/') { pos++; return {TOK_DIV, "/"}; }
+        if (current == '%') { pos++; return {TOK_MOD, "%"}; }
         
-        if (current == '>') { pos++; return {TOK_GREATER, ">"}; }
+        if (current == '<') { pos++; return {TOK_LT, "<"}; }
+        if (current == '>') { pos++; return {TOK_GT, ">"}; }
 
         pos++;
         return {TOK_UNKNOWN, std::string(1, current)};
