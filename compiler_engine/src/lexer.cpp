@@ -7,7 +7,17 @@ Token Lexer::getNextToken() {
     while (pos < src.length()) {
         char current = src[pos];
 
-        if (isspace(current)) { pos++; continue; }
+        // Normal space, tab, carriage return ah skip panniduvom
+        if (current == ' ' || current == '\t' || current == '\r') { 
+            pos++; 
+            continue; 
+        }
+
+        // Enter (\n) or Semicolon (;) vandha adhu Separator!
+        if (current == '\n' || current == ';') {
+            pos++;
+            return {TOK_EOL, "EOL"};
+        }
 
         if (isalpha(current)) {
             std::string val = "";
@@ -19,7 +29,7 @@ Token Lexer::getNextToken() {
             if (val == "return") return {TOK_RETURN, val};
             if (val == "if") return {TOK_IF, val};
             if (val == "else") return {TOK_ELSE, val};
-            if (val == "print") return {TOK_PRINT, val}; // print keyword recognize aagum
+            if (val == "print") return {TOK_PRINT, val};
             return {TOK_IDENTIFIER, val};
         }
 

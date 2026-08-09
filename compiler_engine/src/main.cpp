@@ -10,8 +10,7 @@ int main(int argc, char* argv[]) {
     if (argc > 1) {
         code = argv[1];
     } else {
-        // Namma test case: Assign first, print next!
-        code = "total = 800 + 900 print(total)"; 
+        code = "total = 70 + 90 \n print(total)"; 
     }
 
     InitializeLLVM();
@@ -19,21 +18,28 @@ int main(int argc, char* argv[]) {
     std::vector<Token> tokens = lexer.tokenize();
     Parser parser(tokens);
 
-    // Loop: Muthal token la irundhu kadasila EOF varaikum continuous-ah run aagum!
     while (parser.currentToken().type != TOK_EOF) {
+        // Empty lines illa extra semicolons irundha athai ignore panniduvom
+        if (parser.currentToken().type == TOK_EOL) {
+            parser.getNextToken();
+            continue;
+        }
+
         auto astTree = parser.ParseExpression();
         
         if (astTree) {
+            // THE STRICT CHECK: Expression mudinjadhum \n illa ; irukka nu paakurom
+            if (parser.currentToken().type != TOK_EOL && parser.currentToken().type != TOK_EOF) {
+                std::cout << "Syntax Error: Expected newline or ';' between statements.\n";
+                break;
+            }
+
             llvm::Value* irValue = astTree->codegen();
-            if (irValue) {
-                // MUKKIYAM: isSilent() false aaga irundha mattum thaan output print aagum!
-                if (!astTree->isSilent()) {
-                    if (auto* constInt = llvm::dyn_cast<llvm::ConstantInt>(irValue)) {
-                        std::cout << constInt->getSExtValue() << "\n";
-                    } else {
-                        irValue->print(llvm::outs());
-                        std::cout << "\n";
-                    }
+            if (irValue && !astTree->isSilent()) {
+                if (auto* constInt = llvm::dyn_cast<llvm::ConstantInt>(irValue)) {
+                    std::cout << constInt->getSExtValue() << "\n";
+                } else {
+                    irValue->print(llvm::outs()); std::cout << "\n";
                 }
             }
         } else {

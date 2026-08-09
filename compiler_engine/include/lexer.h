@@ -5,11 +5,12 @@
 #include <vector>
 
 enum TokenType {
-    TOK_FUNC, TOK_RETURN, TOK_IF, TOK_ELSE, 
-    TOK_PRINT,      // Pudhusa 'print' keyword add pandrom
+    TOK_FUNC, TOK_RETURN, TOK_IF, TOK_ELSE, TOK_PRINT,
     TOK_IDENTIFIER, TOK_NUMBER,
     TOK_LBRACE, TOK_RBRACE, TOK_LPAREN, TOK_RPAREN,
-    TOK_ASSIGN, TOK_PLUS, TOK_GREATER, TOK_EOF, TOK_UNKNOWN
+    TOK_ASSIGN, TOK_PLUS, TOK_GREATER, 
+    TOK_EOL,        // Pudhusa add panna End of Line separator (\n or ;)
+    TOK_EOF, TOK_UNKNOWN
 };
 
 struct Token {
