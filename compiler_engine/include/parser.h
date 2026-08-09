@@ -7,14 +7,12 @@
 #include <vector>
 #include <memory>
 
-// Base AST Node
 class ExprAST {
 public:
     virtual ~ExprAST() = default;
     virtual llvm::Value* codegen() = 0; 
 };
 
-// Numbers-kaga (e.g., 100)
 class NumberExprAST : public ExprAST {
     int Val;
 public:
@@ -22,7 +20,6 @@ public:
     llvm::Value* codegen() override;
 };
 
-// Math Operations-kaga (+, -, etc.)
 class BinaryExprAST : public ExprAST {
     char Op;
     std::unique_ptr<ExprAST> LHS, RHS;
@@ -32,18 +29,19 @@ public:
     llvm::Value* codegen() override;
 };
 
-// Parser Class
 class Parser {
     std::vector<Token> tokens;
     size_t pos;
 
-    // Indha rendu declarations dhaan miss aayiduchu! Ippo add panniyachu.
     Token currentToken();
     Token getNextToken();
 
 public:
     Parser(std::vector<Token> tokens);
-    void parse(); 
+    
+    // Pudhusa add pandra functions (Dynamic AST building)
+    std::unique_ptr<ExprAST> ParseNumberExpr();
+    std::unique_ptr<ExprAST> ParseExpression();
 };
 
 #endif
