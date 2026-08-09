@@ -13,6 +13,21 @@ Token Lexer::getNextToken() {
 
         if (current == ',') { pos++; return {TOK_COMMA, ","}; }
 
+        // 💥 MAGIC: String Reader (Double Quotes)
+        if (current == '"') {
+            std::string strVal = "";
+            pos++; // Opening quote-ah skip pandrom
+            
+            // Closing quote varaikum ulla irukka ellathaiyum padikkirom (spaces include aagum)
+            while (pos < src.length() && src[pos] != '"') {
+                strVal += src[pos];
+                pos++;
+            }
+            if (pos < src.length()) pos++; // Closing quote-ah skip pandrom
+            
+            return {TOK_STRING, strVal};
+        }
+
         if (isalpha(current)) {
             std::string val = "";
             while (pos < src.length() && (isalnum(src[pos]) || src[pos] == '_')) {
@@ -24,7 +39,7 @@ Token Lexer::getNextToken() {
             if (val == "if") return {TOK_IF, val};
             if (val == "else") return {TOK_ELSE, val};
             if (val == "print") return {TOK_PRINT, val};
-            if (val == "input") return {TOK_INPUT, val}; // input keyword-ah recognize pandrom
+            if (val == "input") return {TOK_INPUT, val};
             return {TOK_IDENTIFIER, val};
         }
 

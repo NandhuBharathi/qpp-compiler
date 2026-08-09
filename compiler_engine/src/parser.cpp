@@ -64,23 +64,30 @@ std::unique_ptr<ExprAST> Parser::ParsePrintExpr() {
     return std::make_unique<PrintExprAST>(std::move(Arg));
 }
 
-// 💥 THE MAGIC: Input function handling
+// 💥 OVERWRITTEN INPUT FUNCTION
 std::unique_ptr<ExprAST> Parser::ParseInputExpr() {
     getNextToken(); // Consume 'input'
     
     if (currentToken().type != TOK_LPAREN) return nullptr;
     getNextToken(); // Consume '('
     
+    // DEFAULT PROMPT
+    std::string promptMessage = ">>> Enter value: ";
+
+    // Ulla String irundha, adhai namma promptMessage-ah mathikirom!
+    if (currentToken().type == TOK_STRING) {
+        promptMessage = currentToken().value; // User kudutha string-ah edukkirom
+        getNextToken(); // String token-ah consume pandrom
+    }
+    
     if (currentToken().type != TOK_RPAREN) return nullptr;
     getNextToken(); // Consume ')'
 
-    // Execute pause aagi user kitta irundhu prompt vazhiya value vangum!
     int userValue = 0;
-    std::cout << ">>> Enter value: ";
-    std::cout.flush(); // Terminal-la prompt odane theriya idhu thevai
+    std::cout << promptMessage; // Dynamically print custom or default prompt
+    std::cout.flush(); 
     std::cin >> userValue;
 
-    // Vangina value-ah direct-ah oru Number Node-ah return pandrom
     return std::make_unique<NumberExprAST>(userValue);
 }
 
@@ -88,7 +95,7 @@ std::unique_ptr<ExprAST> Parser::ParseExpression() {
     std::unique_ptr<ExprAST> LHS;
 
     if (currentToken().type == TOK_PRINT) { LHS = ParsePrintExpr(); }
-    else if (currentToken().type == TOK_INPUT) { LHS = ParseInputExpr(); } // Input expression link!
+    else if (currentToken().type == TOK_INPUT) { LHS = ParseInputExpr(); } 
     else if (currentToken().type == TOK_IDENTIFIER) { LHS = ParseIdentifierExpr(); } 
     else if (currentToken().type == TOK_NUMBER) { LHS = ParseNumberExpr(); } 
     else { return nullptr; }
