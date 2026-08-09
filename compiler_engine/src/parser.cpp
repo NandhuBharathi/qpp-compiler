@@ -64,27 +64,25 @@ std::unique_ptr<ExprAST> Parser::ParsePrintExpr() {
     return std::make_unique<PrintExprAST>(std::move(Arg));
 }
 
-// 💥 OVERWRITTEN INPUT FUNCTION
 std::unique_ptr<ExprAST> Parser::ParseInputExpr() {
-    getNextToken(); // Consume 'input'
+    getNextToken(); 
     
     if (currentToken().type != TOK_LPAREN) return nullptr;
-    getNextToken(); // Consume '('
+    getNextToken(); 
     
-    // DEFAULT PROMPT
-    std::string promptMessage = ">>> Enter value: ";
+    std::string promptMessage = "Enter value: ";
 
-    // Ulla String irundha, adhai namma promptMessage-ah mathikirom!
     if (currentToken().type == TOK_STRING) {
-        promptMessage = currentToken().value; // User kudutha string-ah edukkirom
-        getNextToken(); // String token-ah consume pandrom
+        promptMessage = currentToken().value; 
+        getNextToken(); 
     }
     
     if (currentToken().type != TOK_RPAREN) return nullptr;
-    getNextToken(); // Consume ')'
+    getNextToken(); 
 
     int userValue = 0;
-    std::cout << promptMessage; // Dynamically print custom or default prompt
+    // 💥 CHANGE HERE: Print prompt and move to newline so outputs don't glue together!
+    std::cout << promptMessage << "\n"; 
     std::cout.flush(); 
     std::cin >> userValue;
 
