@@ -14,28 +14,26 @@ def compile_code():
         return jsonify({'error': 'Code ethum anuppala!'}), 400
     
     user_code = data['code']
+    # 💥 Pudhusu: Frontend-la irundhu varra Custom Input-ah edukkurom
+    user_input = data.get('input', '') 
     
-    # C++ Engine-oda exact path-ah edukkurom
     engine_path = os.path.join(os.path.dirname(__file__), 'compiler_engine', 'qpp_engine')
     
     try:
-        # Python subprocess vachi C++ binary-ah execute pandrom
-        # Example: ./qpp_engine "func magic() { return 1 }"
         result = subprocess.run(
             [engine_path, user_code],
+            input=user_input,     # 💥 Pudhusu: C++ Engine-oda cin-ku idhai feed pandrom!
             capture_output=True,
             text=True,
-            timeout=5 # Infinite loop aagama thadukka 5 secs limit
+            timeout=5
         )
         
-        # C++ Engine-la error vandha
         if result.returncode != 0:
             return jsonify({
                 'status': 'error', 
                 'error': result.stderr or 'C++ Engine execution failed'
             }), 500
             
-        # C++ Engine tharra Tokens output
         output = result.stdout
         
         return jsonify({
