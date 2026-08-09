@@ -5,13 +5,16 @@
 #include <llvm/IR/Module.h>
 #include <llvm/IR/IRBuilder.h>
 #include <memory>
+#include <map>
+#include <string>
 
-// LLVM Global Objects
 extern std::unique_ptr<llvm::LLVMContext> TheContext;
 extern std::unique_ptr<llvm::Module> TheModule;
 extern std::unique_ptr<llvm::IRBuilder<>> Builder;
 
-// Engine Setup Function
+// Variables-ah store panna pora Memory Map!
+extern std::map<std::string, llvm::Value*> NamedValues;
+
 void InitializeLLVM();
 
 #endif

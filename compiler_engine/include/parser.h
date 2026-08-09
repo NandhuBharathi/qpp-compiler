@@ -20,6 +20,24 @@ public:
     llvm::Value* codegen() override;
 };
 
+// Variable-ah read panna (e.g., price)
+class VariableExprAST : public ExprAST {
+    std::string Name;
+public:
+    VariableExprAST(std::string Name) : Name(Name) {}
+    llvm::Value* codegen() override;
+};
+
+// Variable-ku value assign panna (e.g., price = 500)
+class AssignExprAST : public ExprAST {
+    std::string Name;
+    std::unique_ptr<ExprAST> Val;
+public:
+    AssignExprAST(std::string Name, std::unique_ptr<ExprAST> Val)
+        : Name(Name), Val(std::move(Val)) {}
+    llvm::Value* codegen() override;
+};
+
 class BinaryExprAST : public ExprAST {
     char Op;
     std::unique_ptr<ExprAST> LHS, RHS;
@@ -39,8 +57,8 @@ class Parser {
 public:
     Parser(std::vector<Token> tokens);
     
-    // Pudhusa add pandra functions (Dynamic AST building)
     std::unique_ptr<ExprAST> ParseNumberExpr();
+    std::unique_ptr<ExprAST> ParseIdentifierExpr(); // Pudhusa add panniyachu
     std::unique_ptr<ExprAST> ParseExpression();
 };
 

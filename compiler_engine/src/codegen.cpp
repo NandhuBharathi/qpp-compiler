@@ -6,6 +6,7 @@
 std::unique_ptr<llvm::LLVMContext> TheContext;
 std::unique_ptr<llvm::Module> TheModule;
 std::unique_ptr<llvm::IRBuilder<>> Builder;
+std::map<std::string, llvm::Value*> NamedValues; // Define pandrom
 
 void InitializeLLVM() {
     TheContext = std::make_unique<llvm::LLVMContext>();
@@ -13,23 +14,35 @@ void InitializeLLVM() {
     Builder = std::make_unique<llvm::IRBuilder<>>(*TheContext);
 }
 
-// 1. Number-ah LLVM IR-ah maathurathu (e.g., 100 -> i32 100)
 llvm::Value* NumberExprAST::codegen() {
-    // 32-bit integer ah LLVM context-kulla create pandrom
     return llvm::ConstantInt::get(*TheContext, llvm::APInt(32, Val, true));
 }
 
-// 2. Math operation-ah LLVM IR-ah maathurathu (e.g., A + B)
+// Map-la irundhu Variable-ah edukkurom
+llvm::Value* VariableExprAST::codegen() {
+    llvm::Value* V = NamedValues[Name];
+    if (!V) {
+        std::cerr << "Unknown variable name: " << Name << std::endl;
+        return nullptr;
+    }
+    return V;
+}
+
+// Map-kulla pudhu variable-ah assign pandrom
+llvm::Value* AssignExprAST::codegen() {
+    llvm::Value* ValIR = Val->codegen();
+    if (!ValIR) return nullptr;
+    
+    NamedValues[Name] = ValIR; // Memory-la save aagiduchu!
+    return ValIR;
+}
+
 llvm::Value* BinaryExprAST::codegen() {
     llvm::Value* L = LHS->codegen();
     llvm::Value* R = RHS->codegen();
-    
     if (!L || !R) return nullptr;
 
-    if (Op == '+') {
-        // Builder use panni addition instruction create pandrom
-        return Builder->CreateAdd(L, R, "addtmp");
-    }
+    if (Op == '+') return Builder->CreateAdd(L, R, "addtmp");
     
     return nullptr;
 }

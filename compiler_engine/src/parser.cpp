@@ -13,32 +13,47 @@ Token Parser::getNextToken() {
     return currentToken();
 }
 
-// 1. Oru number token-ah AST Node-ah maathurathu
 std::unique_ptr<ExprAST> Parser::ParseNumberExpr() {
-    // String value-ah Integer-ah convert panni Node create pandrom
     auto result = std::make_unique<NumberExprAST>(std::stoi(currentToken().value));
-    getNextToken(); // Andha number-ah consume pannidrom
+    getNextToken();
     return std::move(result);
 }
 
-// 2. Math expression (e.g., 500 + 400) ah AST Tree-ah maathurathu
+// Variables & Assignment Parser
+std::unique_ptr<ExprAST> Parser::ParseIdentifierExpr() {
+    std::string idName = currentToken().value;
+    getNextToken(); // Peru padichadhum adutha token-ku povom
+
+    // '=' illana idhu verum variable read pandrathu
+    if (currentToken().type != TOK_ASSIGN) {
+        return std::make_unique<VariableExprAST>(idName);
+    }
+
+    // '=' irundha, adhu Assignment expression
+    getNextToken(); // '=' ah consume pandrom
+    auto val = ParseExpression();
+    return std::make_unique<AssignExprAST>(idName, std::move(val));
+}
+
 std::unique_ptr<ExprAST> Parser::ParseExpression() {
-    // First left side-la irukka number-ah edukkum
-    auto LHS = ParseNumberExpr();
+    std::unique_ptr<ExprAST> LHS;
+
+    if (currentToken().type == TOK_IDENTIFIER) {
+        LHS = ParseIdentifierExpr();
+    } else if (currentToken().type == TOK_NUMBER) {
+        LHS = ParseNumberExpr();
+    } else {
+        return nullptr;
+    }
+
     if (!LHS) return nullptr;
 
-    // Adutha token '+' ah irundha
     if (currentToken().type == TOK_PLUS) {
-        getNextToken(); // '+' ah consume pannidrom
-        
-        // Right side-la irukka number-ah edukkum
-        auto RHS = ParseNumberExpr();
+        getNextToken();
+        auto RHS = ParseExpression();
         if (!RHS) return nullptr;
-        
-        // Rendaiyum serthu oru Binary Math Node-ah return pannum
         return std::make_unique<BinaryExprAST>('+', std::move(LHS), std::move(RHS));
     }
-    
-    // '+' illana verum andha number-ah mattum thiruppi tharum
+
     return LHS;
 }
