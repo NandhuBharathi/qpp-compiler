@@ -80,10 +80,16 @@ public:
     std::unique_ptr<ExprAST> ParsePrintExpr();
     std::unique_ptr<ExprAST> ParseInputExpr();
     
-    // 💥 BODMAS Precedence Hierarchy Functions
-    std::unique_ptr<ExprAST> ParsePrimary(); // Numbers, Variables, Inputs, Brackets ( )
-    std::unique_ptr<ExprAST> ParseTerm();    // * and / (Higher Priority)
-    std::unique_ptr<ExprAST> ParseExpression(); // + and - (Lower Priority)
+    // 💥 BODMAS & Operator Precedence Declarations added here!
+    std::unique_ptr<ExprAST> ParsePrimary();
+    std::unique_ptr<ExprAST> ParseTerm();
+    std::unique_ptr<ExprAST> ParseAdditive();
+    std::unique_ptr<ExprAST> ParseRelational();
+    std::unique_ptr<ExprAST> ParseEquality();
+    std::unique_ptr<ExprAST> ParseLogicalAnd();
+    std::unique_ptr<ExprAST> ParseLogicalOr();
+    
+    std::unique_ptr<ExprAST> ParseExpression();
 };
 
 #endif
