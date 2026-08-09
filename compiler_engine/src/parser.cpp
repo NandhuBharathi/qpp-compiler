@@ -122,44 +122,30 @@ std::unique_ptr<ExprAST> Parser::ParseInputExpr() {
     return std::make_unique<NumberExprAST>(userValue);
 }
 
-// 💥 1. ParsePrimary: Numbers, Variables, Inputs, and Parentheses ( )
 std::unique_ptr<ExprAST> Parser::ParsePrimary() {
-    if (currentToken().type == TOK_NUMBER) {
-        return ParseNumberExpr();
-    }
-    if (currentToken().type == TOK_IDENTIFIER) {
-        return ParseIdentifierExpr();
-    }
-    if (currentToken().type == TOK_INPUT) {
-        return ParseInputExpr();
-    }
-    if (currentToken().type == TOK_STRING || currentToken().type == TOK_BANG) {
-        return ParseStringExpr();
-    }
+    if (currentToken().type == TOK_NUMBER) return ParseNumberExpr();
+    if (currentToken().type == TOK_IDENTIFIER) return ParseIdentifierExpr();
+    if (currentToken().type == TOK_INPUT) return ParseInputExpr();
+    if (currentToken().type == TOK_STRING || currentToken().type == TOK_BANG) return ParseStringExpr();
     
-    // Parentheses (BODMAS Brackets Support!)
     if (currentToken().type == TOK_LPAREN) {
-        getNextToken(); // Consume '('
+        getNextToken(); 
         auto node = ParseExpression();
         if (!node) return nullptr;
-        if (currentToken().type != TOK_RPAREN) {
-            std::cerr << "Error: Expected ')'\n";
-            return nullptr;
-        }
-        getNextToken(); // Consume ')'
+        if (currentToken().type != TOK_RPAREN) return nullptr;
+        getNextToken(); 
         return node;
     }
-
     return nullptr;
 }
 
-// 💥 2. ParseTerm: Higher Precedence (* and /)
 std::unique_ptr<ExprAST> Parser::ParseTerm() {
     auto LHS = ParsePrimary();
     if (!LHS) return nullptr;
 
-    while (currentToken().type == TOK_MUL || currentToken().type == TOK_DIV) {
-        char op = currentToken().value[0];
+    while (currentToken().type == TOK_MUL || currentToken().type == TOK_DIV || currentToken().type == TOK_MOD) {
+        std::string opStr = (currentToken().type == TOK_MUL) ? "*" : (currentToken().type == TOK_DIV) ? "/" : "%";
+        char op = opStr[0];
         getNextToken();
         auto RHS = ParsePrimary();
         if (!RHS) return nullptr;
@@ -168,20 +154,9 @@ std::unique_ptr<ExprAST> Parser::ParseTerm() {
     return LHS;
 }
 
-// 💥 3. ParseExpression: Lower Precedence (+ and -)
-std::unique_ptr<ExprAST> Parser::ParseExpression() {
-    // If it's a print statement or assignment starting with identifier
-    if (currentToken().type == TOK_PRINT) {
-        return ParsePrintExpr();
-    }
-
+std::unique_ptr<ExprAST> Parser::ParseAdditive() {
     auto LHS = ParseTerm();
-    if (!LHS) {
-        if (currentToken().type == TOK_IDENTIFIER) {
-            return ParseIdentifierExpr(); // Handles variable assignments like a = 10
-        }
-        return nullptr;
-    }
+    if (!LHS) return nullptr;
 
     while (currentToken().type == TOK_PLUS || currentToken().type == TOK_MINUS) {
         char op = currentToken().value[0];
@@ -189,6 +164,78 @@ std::unique_ptr<ExprAST> Parser::ParseExpression() {
         auto RHS = ParseTerm();
         if (!RHS) return nullptr;
         LHS = std::make_unique<BinaryExprAST>(op, std::move(LHS), std::move(RHS));
+    }
+    return LHS;
+}
+
+std::unique_ptr<ExprAST> Parser::ParseRelational() {
+    auto LHS = ParseAdditive();
+    if (!LHS) return nullptr;
+
+    while (currentToken().type == TOK_LT || currentToken().type == TOK_GT || 
+           currentToken().type == TOK_LE || currentToken().type == TOK_GE) {
+        std::string op = (currentToken().type == TOK_LT) ? "<" : 
+                         (currentToken().type == TOK_GT) ? ">" : 
+                         (currentToken().type == TOK_LE) ? "<=" : ">=";
+        char opChar = op[0];
+        if (op.length() > 1) opChar = (op == "<=") ? 'L' : 'G';
+        getNextToken();
+        auto RHS = ParseAdditive();
+        if (!RHS) return nullptr;
+        LHS = std::make_unique<BinaryExprAST>(opChar, std::move(LHS), std::move(RHS));
+    }
+    return LHS;
+}
+
+std::unique_ptr<ExprAST> Parser::ParseEquality() {
+    auto LHS = ParseRelational();
+    if (!LHS) return nullptr;
+
+    while (currentToken().type == TOK_EQ || currentToken().type == TOK_NE) {
+        char op = (currentToken().type == TOK_EQ) ? 'E' : 'N';
+        getNextToken();
+        auto RHS = ParseRelational();
+        if (!RHS) return nullptr;
+        LHS = std::make_unique<BinaryExprAST>(op, std::move(LHS), std::move(RHS));
+    }
+    return LHS;
+}
+
+std::unique_ptr<ExprAST> Parser::ParseLogicalAnd() {
+    auto LHS = ParseEquality();
+    if (!LHS) return nullptr;
+
+    while (currentToken().type == TOK_AND) {
+        getNextToken();
+        auto RHS = ParseEquality();
+        if (!RHS) return nullptr;
+        LHS = std::make_unique<BinaryExprAST>('&', std::move(LHS), std::move(RHS));
+    }
+    return LHS;
+}
+
+std::unique_ptr<ExprAST> Parser::ParseLogicalOr() {
+    auto LHS = ParseLogicalAnd();
+    if (!LHS) return nullptr;
+
+    while (currentToken().type == TOK_OR) {
+        getNextToken();
+        auto RHS = ParseLogicalAnd();
+        if (!RHS) return nullptr;
+        LHS = std::make_unique<BinaryExprAST>('|', std::move(LHS), std::move(RHS));
+    }
+    return LHS;
+}
+
+// 💥 CORRECTED ENTRY POINT FOR ALL EXPRESSIONS
+std::unique_ptr<ExprAST> Parser::ParseExpression() {
+    if (currentToken().type == TOK_PRINT) return ParsePrintExpr();
+
+    auto LHS = ParseLogicalOr();
+    if (!LHS) {
+        if (currentToken().type == Token::TOK_IDENTIFIER || currentToken().type == TOK_IDENTIFIER) 
+            return ParseIdentifierExpr();
+        return nullptr;
     }
     return LHS;
 }
