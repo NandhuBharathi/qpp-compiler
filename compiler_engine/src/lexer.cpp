@@ -9,12 +9,8 @@ Token Lexer::getNextToken() {
 
         if (current == ' ' || current == '\t' || current == '\r') { pos++; continue; }
 
-        if (current == '\n' || current == ';') {
-            pos++;
-            return {TOK_EOL, "EOL"};
-        }
+        if (current == '\n' || current == ';') { pos++; return {TOK_EOL, "EOL"}; }
 
-        // Comma-ah token-ah convert pandrom
         if (current == ',') { pos++; return {TOK_COMMA, ","}; }
 
         if (isalpha(current)) {
@@ -28,6 +24,7 @@ Token Lexer::getNextToken() {
             if (val == "if") return {TOK_IF, val};
             if (val == "else") return {TOK_ELSE, val};
             if (val == "print") return {TOK_PRINT, val};
+            if (val == "input") return {TOK_INPUT, val}; // input keyword-ah recognize pandrom
             return {TOK_IDENTIFIER, val};
         }
 

@@ -19,43 +19,35 @@ std::unique_ptr<ExprAST> Parser::ParseNumberExpr() {
     return std::move(result);
 }
 
-// BUG FIX: Smart Lookahead for Identifiers
 std::unique_ptr<ExprAST> Parser::ParseIdentifierExpr() {
     std::string idName = currentToken().value;
     
-    // LOOKAHEAD: Munnadi poy '=' irukka nu check pandrom!
     bool isAssign = false;
     for (size_t i = pos; i < tokens.size(); i++) {
         if (tokens[i].type == TOK_ASSIGN) { isAssign = true; break; }
-        // Identifier illa Comma thavira vera edhu vandhalum idhu assignment illa nu mudivu panniduvom
         if (tokens[i].type != TOK_IDENTIFIER && tokens[i].type != TOK_COMMA) break; 
     }
 
-    getNextToken(); // Consume the first identifier
+    getNextToken(); 
 
-    // Assignment illana, idhu verum Variable Read! (Commas-ah eat pannadhu)
     if (!isAssign) {
         return std::make_unique<VariableExprAST>(idName);
     }
 
-    // Assignment aaga irundha mattum commas-ah read panni List aakkanum
     std::vector<std::string> names;
     names.push_back(idName);
 
     while (currentToken().type == TOK_COMMA) {
-        getNextToken(); // Consume ','
-        names.push_back(currentToken().value);
-        getNextToken(); // Consume variable name
+        getNextToken(); names.push_back(currentToken().value); getNextToken();
     }
 
-    getNextToken(); // Consume '='
+    getNextToken(); 
 
     std::vector<std::unique_ptr<ExprAST>> vals;
     vals.push_back(ParseExpression());
 
     while (currentToken().type == TOK_COMMA) {
-        getNextToken(); // Consume ','
-        vals.push_back(ParseExpression());
+        getNextToken(); vals.push_back(ParseExpression());
     }
 
     return std::make_unique<AssignExprAST>(names, std::move(vals));
@@ -65,20 +57,38 @@ std::unique_ptr<ExprAST> Parser::ParsePrintExpr() {
     getNextToken(); 
     if (currentToken().type != TOK_LPAREN) return nullptr;
     getNextToken(); 
-    
     auto Arg = ParseExpression();
     if (!Arg) return nullptr;
-    
     if (currentToken().type != TOK_RPAREN) return nullptr;
     getNextToken(); 
-    
     return std::make_unique<PrintExprAST>(std::move(Arg));
+}
+
+// 💥 THE MAGIC: Input function handling
+std::unique_ptr<ExprAST> Parser::ParseInputExpr() {
+    getNextToken(); // Consume 'input'
+    
+    if (currentToken().type != TOK_LPAREN) return nullptr;
+    getNextToken(); // Consume '('
+    
+    if (currentToken().type != TOK_RPAREN) return nullptr;
+    getNextToken(); // Consume ')'
+
+    // Execute pause aagi user kitta irundhu prompt vazhiya value vangum!
+    int userValue = 0;
+    std::cout << ">>> Enter value: ";
+    std::cout.flush(); // Terminal-la prompt odane theriya idhu thevai
+    std::cin >> userValue;
+
+    // Vangina value-ah direct-ah oru Number Node-ah return pandrom
+    return std::make_unique<NumberExprAST>(userValue);
 }
 
 std::unique_ptr<ExprAST> Parser::ParseExpression() {
     std::unique_ptr<ExprAST> LHS;
 
-    if (currentToken().type == TOK_PRINT) { LHS = ParsePrintExpr(); } 
+    if (currentToken().type == TOK_PRINT) { LHS = ParsePrintExpr(); }
+    else if (currentToken().type == TOK_INPUT) { LHS = ParseInputExpr(); } // Input expression link!
     else if (currentToken().type == TOK_IDENTIFIER) { LHS = ParseIdentifierExpr(); } 
     else if (currentToken().type == TOK_NUMBER) { LHS = ParseNumberExpr(); } 
     else { return nullptr; }

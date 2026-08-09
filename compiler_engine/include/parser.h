@@ -28,10 +28,9 @@ public:
     llvm::Value* codegen() override;
 };
 
-// MULTIPLE ASSIGNMENT UPGRADE (Vector Lists)
 class AssignExprAST : public ExprAST {
-    std::vector<std::string> Names;             // Ippo idhu List!
-    std::vector<std::unique_ptr<ExprAST>> Vals; // Ippo idhu List!
+    std::vector<std::string> Names;
+    std::vector<std::unique_ptr<ExprAST>> Vals;
 public:
     AssignExprAST(std::vector<std::string> Names, std::vector<std::unique_ptr<ExprAST>> Vals)
         : Names(Names), Vals(std::move(Vals)) {}
@@ -68,6 +67,7 @@ public:
     std::unique_ptr<ExprAST> ParseNumberExpr();
     std::unique_ptr<ExprAST> ParseIdentifierExpr();
     std::unique_ptr<ExprAST> ParsePrintExpr();
+    std::unique_ptr<ExprAST> ParseInputExpr(); // Pudhusa Input Parse Pandra function
     std::unique_ptr<ExprAST> ParseExpression();
 };
 
