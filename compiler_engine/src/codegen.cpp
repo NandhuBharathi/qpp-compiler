@@ -6,7 +6,7 @@
 std::unique_ptr<llvm::LLVMContext> TheContext;
 std::unique_ptr<llvm::Module> TheModule;
 std::unique_ptr<llvm::IRBuilder<>> Builder;
-std::map<std::string, llvm::Value*> NamedValues; // Define pandrom
+std::map<std::string, llvm::Value*> NamedValues;
 
 void InitializeLLVM() {
     TheContext = std::make_unique<llvm::LLVMContext>();
@@ -18,30 +18,29 @@ llvm::Value* NumberExprAST::codegen() {
     return llvm::ConstantInt::get(*TheContext, llvm::APInt(32, Val, true));
 }
 
-// Map-la irundhu Variable-ah edukkurom
 llvm::Value* VariableExprAST::codegen() {
     llvm::Value* V = NamedValues[Name];
-    if (!V) {
-        std::cerr << "Unknown variable name: " << Name << std::endl;
-        return nullptr;
-    }
+    if (!V) { std::cerr << "Unknown variable name: " << Name << "\n"; return nullptr; }
     return V;
 }
 
-// Map-kulla pudhu variable-ah assign pandrom
 llvm::Value* AssignExprAST::codegen() {
     llvm::Value* ValIR = Val->codegen();
     if (!ValIR) return nullptr;
-    
-    NamedValues[Name] = ValIR; // Memory-la save aagiduchu!
+    NamedValues[Name] = ValIR; 
     return ValIR;
+}
+
+// INDHA FUNCTION DHAAN MISS AAGIRUNDHADHU!
+llvm::Value* PrintExprAST::codegen() {
+    return Arg->codegen();
 }
 
 llvm::Value* BinaryExprAST::codegen() {
     llvm::Value* L = LHS->codegen();
     llvm::Value* R = RHS->codegen();
     if (!L || !R) return nullptr;
-
+    
     if (Op == '+') return Builder->CreateAdd(L, R, "addtmp");
     
     return nullptr;
