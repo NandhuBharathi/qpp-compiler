@@ -6,8 +6,8 @@ document.getElementById('run-btn').addEventListener('click', async () => {
     outputTerminal.style.color = "#f39c12"; 
     
     try {
-        // Inga unga Render URL-ah maathunga (kadasila /compile irukkanum)
-        const backendURL = 'https://UNGA_RENDER_URL.onrender.com/compile'; 
+        // Unga exact Render URL + /compile endpoint
+        const backendURL = 'https://qpp-compiler.onrender.com/compile'; 
         
         const response = await fetch(backendURL, {
             method: 'POST',
@@ -26,6 +26,6 @@ document.getElementById('run-btn').addEventListener('click', async () => {
         }
     } catch (error) {
         outputTerminal.style.color = "#ff4d4d";
-        outputTerminal.innerText = "Network Error: Could not connect to Backend Engine.";
+        outputTerminal.innerText = "Network Error: API is waking up or URL is unreachable. Please wait 1 minute and try again.";
     }
 });
