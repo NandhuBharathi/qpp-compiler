@@ -4,32 +4,19 @@
 #include <string>
 #include <vector>
 
-// Q++ kaga namma define pandra Token types
 enum TokenType {
-    TOK_FUNC,       // 'func'
-    TOK_RETURN,     // 'return'
-    TOK_IF,         // 'if'
-    TOK_ELSE,       // 'else'
-    TOK_IDENTIFIER, // Variable/Function names
-    TOK_NUMBER,     // 100, 200, etc.
-    TOK_LBRACE,     // '{'
-    TOK_RBRACE,     // '}'
-    TOK_LPAREN,     // '('
-    TOK_RPAREN,     // ')'
-    TOK_ASSIGN,     // '='
-    TOK_PLUS,       // '+'
-    TOK_GREATER,    // '>'
-    TOK_EOF,        // End of File
-    TOK_UNKNOWN     // Unrecognized characters
+    TOK_FUNC, TOK_RETURN, TOK_IF, TOK_ELSE, 
+    TOK_PRINT,      // Pudhusa 'print' keyword add pandrom
+    TOK_IDENTIFIER, TOK_NUMBER,
+    TOK_LBRACE, TOK_RBRACE, TOK_LPAREN, TOK_RPAREN,
+    TOK_ASSIGN, TOK_PLUS, TOK_GREATER, TOK_EOF, TOK_UNKNOWN
 };
 
-// Oru Token-oda structure
 struct Token {
     TokenType type;
     std::string value;
 };
 
-// Lexer Class definition
 class Lexer {
     std::string src;
     size_t pos;

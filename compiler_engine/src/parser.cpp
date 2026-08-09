@@ -19,26 +19,40 @@ std::unique_ptr<ExprAST> Parser::ParseNumberExpr() {
     return std::move(result);
 }
 
-// Variables & Assignment Parser
 std::unique_ptr<ExprAST> Parser::ParseIdentifierExpr() {
     std::string idName = currentToken().value;
-    getNextToken(); // Peru padichadhum adutha token-ku povom
+    getNextToken(); 
 
-    // '=' illana idhu verum variable read pandrathu
     if (currentToken().type != TOK_ASSIGN) {
         return std::make_unique<VariableExprAST>(idName);
     }
 
-    // '=' irundha, adhu Assignment expression
-    getNextToken(); // '=' ah consume pandrom
+    getNextToken(); 
     auto val = ParseExpression();
     return std::make_unique<AssignExprAST>(idName, std::move(val));
+}
+
+// Print logic-ah string la irundhu padikkirom: print(expression)
+std::unique_ptr<ExprAST> Parser::ParsePrintExpr() {
+    getNextToken(); // Consume 'print'
+    if (currentToken().type != TOK_LPAREN) return nullptr;
+    getNextToken(); // Consume '('
+    
+    auto Arg = ParseExpression();
+    if (!Arg) return nullptr;
+    
+    if (currentToken().type != TOK_RPAREN) return nullptr;
+    getNextToken(); // Consume ')'
+    
+    return std::make_unique<PrintExprAST>(std::move(Arg));
 }
 
 std::unique_ptr<ExprAST> Parser::ParseExpression() {
     std::unique_ptr<ExprAST> LHS;
 
-    if (currentToken().type == TOK_IDENTIFIER) {
+    if (currentToken().type == TOK_PRINT) {
+        LHS = ParsePrintExpr();
+    } else if (currentToken().type == TOK_IDENTIFIER) {
         LHS = ParseIdentifierExpr();
     } else if (currentToken().type == TOK_NUMBER) {
         LHS = ParseNumberExpr();
